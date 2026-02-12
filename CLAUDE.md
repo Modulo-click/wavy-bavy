@@ -44,12 +44,21 @@ src/
   utils/
     path-generator.ts          # SVG path math (generatePath, flipPathVertically)
     color-utils.ts             # Color parsing, hex/rgb conversion, interpolation
-    animation.ts               # Animation system (flow, pulse, morph, ripple, bounce)
+    animation.ts               # Animation system (flow, pulse, morph, ripple, bounce, custom)
     clip-path.ts               # CSS clip-path polygon generation
+    use-intersection.ts        # IntersectionObserver hook (lazy rendering + throttling)
+    path-optimizer.ts          # SVG path simplification (Ramer-Douglas-Peucker)
+  components/
+    WaveSection.tsx            # Main wrapper component (primary public API)
+    WaveRenderer.tsx           # SVG wave renderer with filters
+    WaveLayer.tsx              # Multi-layer wave stacking
+    WaveSectionCSS.tsx         # CSS-only wave component (clip-path, no SVG)
+  effects.ts                   # Effects barrel export entry point
+  animations.ts                # Animations barrel export entry point
   tailwind/
     plugin.ts                  # Tailwind CSS plugin (utility classes, JIT, presets)
     theme.ts                   # Default theme tokens (heights, patterns, durations)
-tests/                         # Vitest test suite (106 tests, 8 files)
+tests/                         # Vitest test suite (150 tests, 10 files)
 playground/                    # Vite + React demo app
 ```
 
@@ -59,7 +68,10 @@ playground/                    # Vite + React demo app
 - Each `WaveSection` auto-registers on mount, providing its background color and config
 - Adjacent sections are detected automatically; wave colors are derived from neighboring backgrounds
 - `WaveRenderer` generates SVG paths using pattern generators (smooth, organic, sharp, mountain)
-- Animations use CSS keyframe injection via `useWaveAnimation` hook
+- Animations use CSS keyframe injection via `useWaveAnimation` hook (supports custom keyframes)
+- `useReducedMotion` auto-disables animations when user prefers reduced motion
+- Effects (stroke, blur, texture, innerShadow) compose via SVG filter pipeline in `WaveRenderer`
+- Lazy rendering and animation throttling use `useIntersection` (IntersectionObserver)
 
 ### Stability Patterns (Critical)
 
@@ -88,7 +100,21 @@ playground/                    # Vite + React demo app
 - Playground demos for all 5 animation types
 - Build: ESM 33.32 KB, CJS 34.31 KB, DTS 15.14 KB + Tailwind plugin 3.32 KB
 
-### Phase 3: Effects & Performance -- TODO
+### Phase 3: Effects, Animations & Performance -- COMPLETE
+- `useReducedMotion` hook (prefers-reduced-motion media query, SSR-safe)
+- Lazy rendering via `useIntersection` (IntersectionObserver, placeholder until visible)
+- Animation throttling (auto-pause off-screen, auto-resume on scroll back)
+- Stroke/outline waves (`stroke` prop with StrokeConfig: color, width, dashArray, fill)
+- Blur/frosted glass (`blur` prop with BlurConfig: backdrop-filter, opacity, saturation)
+- Texture overlays (`texture` prop with TextureConfig: feTurbulence + feDisplacementMap)
+- Inner shadows (`innerShadow` prop with InnerShadowConfig: SVG filter pipeline)
+- Custom keyframes (`animate='custom'` + `customKeyframes` prop)
+- SVG path optimization (`optimizePath` — Ramer-Douglas-Peucker algorithm)
+- Zero-overhead static rendering (lazy ID generation, no-op callbacks, shared empty objects)
+- Code-splitting: separate `./effects` and `./animations` entry points
+- CSS-only mode: `WaveSectionCSS` component (clip-path polygon, no SVG, no context)
+- 150 unit tests across 10 files
+- Build: ESM index 44.56 KB, animations 9.54 KB, effects 739 B, Tailwind plugin 3.32 KB
 ### Phase 4: Scroll & Interaction -- TODO
 ### Phase 5: Dev Tools -- TODO
 ### Phase 6: Multi-Framework Support -- TODO
