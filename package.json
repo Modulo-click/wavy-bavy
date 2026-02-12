@@ -1,0 +1,84 @@
+{
+    "name": "wavy-bavy",
+    "version": "0.1.0",
+    "description": "Seamless, automatic wave transitions between page sections. Context-aware, responsive, and customizable.",
+    "author": "Modulo-click",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Modulo-click/wavy-bavy"
+    },
+    "homepage": "https://github.com/Modulo-click/wavy-bavy#readme",
+    "bugs": {
+        "url": "https://github.com/Modulo-click/wavy-bavy/issues"
+    },
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        },
+        "./effects": {
+            "types": "./dist/effects.d.ts",
+            "import": "./dist/effects.mjs",
+            "require": "./dist/effects.js"
+        },
+        "./animations": {
+            "types": "./dist/animations.d.ts",
+            "import": "./dist/animations.mjs",
+            "require": "./dist/animations.js"
+        },
+        "./tailwind": {
+            "types": "./dist/tailwind/plugin.d.ts",
+            "import": "./dist/tailwind/plugin.mjs",
+            "require": "./dist/tailwind/plugin.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "sideEffects": false,
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "lint": "tsc --noEmit",
+        "prepublishOnly": "npm run build",
+        "size": "size-limit"
+    },
+    "peerDependencies": {
+        "react": ">=18.0.0",
+        "react-dom": ">=18.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.3.0",
+        "vitest": "^1.0.0",
+        "@testing-library/react": "^14.0.0",
+        "jsdom": "^23.0.0"
+    },
+    "keywords": [
+        "react",
+        "wave",
+        "section",
+        "divider",
+        "svg",
+        "animation",
+        "tailwind",
+        "nextjs",
+        "transition",
+        "wavy",
+        "seamless",
+        "clip-path"
+    ]
+}

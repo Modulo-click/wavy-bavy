@@ -1,0 +1,152 @@
+'use client'
+
+import {
+    createContext,
+    useCallback,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
+import type { WaveContextValue, WaveDefaults, SectionRegistration, WaveProviderProps } from '../types'
+import { DEFAULTS } from '../constants'
+
+// ============================================================
+// Context
+// ============================================================
+
+export const WaveContext = createContext<WaveContextValue | null>(null)
+WaveContext.displayName = 'WaveContext'
+
+// ============================================================
+// Provider
+// ============================================================
+
+/**
+ * WaveProvider — wraps your page layout and tracks all WaveSections.
+ *
+ * Provides automatic section ordering, adjacent section detection,
+ * and global default configuration.
+ *
+ * @example
+ * ```tsx
+ * <WaveProvider defaults={{ height: 150, pattern: 'organic' }}>
+ *   <WaveSection background="#fff">...</WaveSection>
+ *   <WaveSection background="#f5f5f5">...</WaveSection>
+ * </WaveProvider>
+ * ```
+ */
+export function WaveProvider({ defaults: userDefaults, debug = false, children }: WaveProviderProps) {
+    const [sections, setSections] = useState<SectionRegistration[]>([])
+    const orderCounter = useRef(0)
+
+    const defaults = useMemo<WaveDefaults>(
+        () => ({ ...DEFAULTS, ...userDefaults }),
+        [userDefaults],
+    )
+
+    // Register a section — returns unregister cleanup
+    const register = useCallback(
+        (id: string, config: Omit<SectionRegistration, 'order'>) => {
+            const order = orderCounter.current++
+
+            setSections((prev) => {
+                // Avoid duplicates
+                if (prev.some((s) => s.id === id)) return prev
+                const next = [...prev, { ...config, order }]
+                // Sort by order to maintain insertion sequence
+                next.sort((a, b) => a.order - b.order)
+                return next
+            })
+
+            // Cleanup
+            return () => {
+                setSections((prev) => prev.filter((s) => s.id !== id))
+            }
+        },
+        [],
+    )
+
+    // Update a section's config
+    const update = useCallback((id: string, partial: Partial<SectionRegistration>) => {
+        setSections((prev) =>
+            prev.map((s) => (s.id === id ? { ...s, ...partial } : s)),
+        )
+    }, [])
+
+    // Get the section immediately before a given ID
+    const getSectionBefore = useCallback(
+        (id: string): SectionRegistration | null => {
+            const idx = sections.findIndex((s) => s.id === id)
+            return idx > 0 ? sections[idx - 1] : null
+        },
+        [sections],
+    )
+
+    // Get the section immediately after a given ID
+    const getSectionAfter = useCallback(
+        (id: string): SectionRegistration | null => {
+            const idx = sections.findIndex((s) => s.id === id)
+            return idx >= 0 && idx < sections.length - 1 ? sections[idx + 1] : null
+        },
+        [sections],
+    )
+
+    const value = useMemo<WaveContextValue>(
+        () => ({ sections, register, update, getSectionBefore, getSectionAfter, defaults }),
+        [sections, register, update, getSectionBefore, getSectionAfter, defaults],
+    )
+
+    return (
+        <WaveContext.Provider value={value}>
+            {debug && <WaveDebugOverlay sections={sections} />}
+            {children}
+        </WaveContext.Provider>
+    )
+}
+
+// ============================================================
+// Debug Overlay (dev only)
+// ============================================================
+
+function WaveDebugOverlay({ sections }: { sections: SectionRegistration[] }) {
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 8,
+                right: 8,
+                zIndex: 99999,
+                background: 'rgba(0,0,0,0.85)',
+                color: '#fff',
+                padding: '12px 16px',
+                borderRadius: 8,
+                fontSize: 12,
+                fontFamily: 'monospace',
+                maxWidth: 300,
+                pointerEvents: 'none',
+            }}
+        >
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>🌊 wavy-bavy debug</div>
+            {sections.length === 0 && <div style={{ opacity: 0.6 }}>No sections registered</div>}
+            {sections.map((s, i) => (
+                <div key={s.id} style={{ marginBottom: 4 }}>
+                    <span style={{ opacity: 0.5 }}>{i}.</span>{' '}
+                    <span
+                        style={{
+                            display: 'inline-block',
+                            width: 10,
+                            height: 10,
+                            borderRadius: 2,
+                            backgroundColor: s.background.dominantColor,
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            marginRight: 4,
+                            verticalAlign: 'middle',
+                        }}
+                    />
+                    <span>{s.background.dominantColor}</span>
+                    <span style={{ opacity: 0.4, marginLeft: 6 }}>{s.wavePosition}</span>
+                </div>
+            ))}
+        </div>
+    )
+}
