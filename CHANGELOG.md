@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Wave Polish** (Phase 7.5): 3 new pattern generators (flowing, ribbon, layered-organic), interlocking dual-wave system with 4 modes (interlock, overlap, apart, flush), SVG path morphing animations (drift, breathe, undulate, ripple-out), velocity-adaptive scroll tracker, procedural uniqueness via `autoSeed()`, 5 new presets
+- **Library Polish** (Phase 8): SVG gradient fills (`fillGradient`, `containerGradient`), responsive heights via breakpoint object, prop validation with console warnings, stable filter IDs via `useId()`
+- **Wave Quality** (Phase 8.5): True SVG path morphing replacing slide transforms, coordinated dual-path animation sync, auto-gradient from adjacent sections, section-level frosted glass blur, SVG edge fix (viewBox extension)
+- **Playground Reorganization** (Phase 8.6): Per-section inline controls (`DemoSection`), wave edge clipping fix (path generators extended -20/+20px), playground reorganized by feature type, consolidated ~35 sections to ~18
+
 ## [0.1.0] - 2025-02-13
 
 ### Added

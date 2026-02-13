@@ -131,13 +131,14 @@ describe('WavySectionElement', () => {
         expect(pathBefore).not.toBe(pathAfter)
     })
 
-    it('injects keyframes when animate is set', () => {
+    it('injects keyframes when animate is set (path morph)', () => {
         const el = document.createElement('wavy-section')
         el.setAttribute('animate', 'flow')
         document.body.appendChild(el)
-        const style = el.shadowRoot!.querySelector('style')
-        expect(style!.textContent).toContain('@keyframes')
-        expect(style!.textContent).toContain('wavy-wc-flow')
+        // flow is now a path morph animation — keyframes are in SVG <defs> <style>
+        const svgStyle = el.shadowRoot!.querySelector('svg style')
+        expect(svgStyle!.textContent).toContain('@keyframes')
+        expect(svgStyle!.textContent).toContain('wavy-wc-morph-a-flow')
     })
 
     it('does not inject keyframes when animate is "none"', () => {
@@ -160,8 +161,9 @@ describe('WavySectionElement', () => {
         el.setAttribute('animate', 'flow')
         el.setAttribute('animation-duration', '8')
         document.body.appendChild(el)
-        const svg = el.shadowRoot!.querySelector('svg')
-        expect(svg!.style.cssText).toContain('8s')
+        // flow is path morph — duration goes on the <path> element, not <svg>
+        const path = el.shadowRoot!.querySelector('svg path')
+        expect(path!.getAttribute('style')).toContain('8s')
     })
 
     it('applies transform for top wave direction', () => {

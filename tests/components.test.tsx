@@ -886,7 +886,7 @@ describe('WaveRenderer (parallax)', () => {
             />,
         )
         const svg = document.querySelector('svg') as SVGElement
-        expect(svg.getAttribute('viewBox')).toBe('0 -6 1440 120')
+        expect(svg.getAttribute('viewBox')).toBe('-20 -6 1480 120')
     })
 
     it('applies horizontal parallax via wrapper translateX', () => {
@@ -919,7 +919,7 @@ describe('WaveRenderer (parallax)', () => {
             />,
         )
         const svg = document.querySelector('svg') as SVGElement
-        expect(svg.getAttribute('viewBox')).toBe('0 -50 1440 120')
+        expect(svg.getAttribute('viewBox')).toBe('-20 -50 1480 120')
     })
 })
 
@@ -974,7 +974,7 @@ describe('WaveLayer (parallax)', () => {
             const svg = (wave as HTMLElement).querySelector('svg') as SVGElement
             const viewBox = svg.getAttribute('viewBox') ?? ''
             // viewBox should NOT be "0 0 1440 120" — the Y origin should be shifted
-            expect(viewBox).not.toBe('0 0 1440 120')
+            expect(viewBox).not.toBe('-20 0 1480 120')
         }
     })
 })

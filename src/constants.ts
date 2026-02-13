@@ -45,11 +45,11 @@ function generateSmoothPath(config: PatternConfig): string {
     const cy = height - waveHeight
 
     return [
-        `M 0 ${height}`,
-        `L 0 ${cy + waveHeight * 0.6}`,
+        `M -20 ${height}`,
+        `L -20 ${cy + waveHeight * 0.6}`,
         `Q ${width * 0.25} ${cy - waveHeight * 0.4}, ${width * 0.5} ${cy + waveHeight * 0.2}`,
-        `Q ${width * 0.75} ${cy + waveHeight * 0.8}, ${width} ${cy + waveHeight * 0.3}`,
-        `L ${width} ${height}`,
+        `Q ${width * 0.75} ${cy + waveHeight * 0.8}, ${width + 20} ${cy + waveHeight * 0.3}`,
+        `L ${width + 20} ${height}`,
         `Z`,
     ].join(' ')
 }
@@ -74,11 +74,11 @@ function generateOrganicPath(config: PatternConfig): string {
     const r3 = pseudoRandom(3) * 0.4 + 0.2
 
     return [
-        `M 0 ${height}`,
-        `L 0 ${cy + waveHeight * r1}`,
+        `M -20 ${height}`,
+        `L -20 ${cy + waveHeight * r1}`,
         `C ${width * 0.2} ${cy - waveHeight * r2}, ${width * 0.35} ${cy + waveHeight * r3}, ${width * 0.5} ${cy + waveHeight * 0.15}`,
-        `C ${width * 0.65} ${cy - waveHeight * r1}, ${width * 0.8} ${cy + waveHeight * r2}, ${width} ${cy + waveHeight * r3}`,
-        `L ${width} ${height}`,
+        `C ${width * 0.65} ${cy - waveHeight * r1}, ${width * 0.8} ${cy + waveHeight * r2}, ${width + 20} ${cy + waveHeight * r3}`,
+        `L ${width + 20} ${height}`,
         `Z`,
     ].join(' ')
 }
@@ -93,7 +93,7 @@ function generateSharpPath(config: PatternConfig): string {
     const peakCount = Math.max(1, Math.round(frequency))
     const segmentWidth = width / (peakCount * 2)
 
-    const points: string[] = [`M 0 ${height}`, `L 0 ${cy + waveHeight}`]
+    const points: string[] = [`M -20 ${height}`, `L -20 ${cy + waveHeight}`]
 
     for (let i = 0; i < peakCount * 2; i++) {
         const x = segmentWidth * (i + 1)
@@ -101,7 +101,7 @@ function generateSharpPath(config: PatternConfig): string {
         points.push(`L ${x} ${y}`)
     }
 
-    points.push(`L ${width} ${height}`, `Z`)
+    points.push(`L ${width + 20} ${cy + waveHeight}`, `L ${width + 20} ${height}`, `Z`)
     return points.join(' ')
 }
 
@@ -115,7 +115,7 @@ function generateMountainPath(config: PatternConfig): string {
     const peakCount = Math.max(1, Math.round(frequency))
     const segmentWidth = width / peakCount
 
-    const points: string[] = [`M 0 ${height}`, `L 0 ${cy + waveHeight}`]
+    const points: string[] = [`M -20 ${height}`, `L -20 ${cy + waveHeight}`]
 
     for (let i = 0; i < peakCount; i++) {
         const peakX = segmentWidth * i + segmentWidth * 0.5
@@ -124,7 +124,7 @@ function generateMountainPath(config: PatternConfig): string {
         points.push(`L ${valleyX} ${cy + waveHeight}`)
     }
 
-    points.push(`L ${width} ${height}`, `Z`)
+    points.push(`L ${width + 20} ${cy + waveHeight}`, `L ${width + 20} ${height}`, `Z`)
     return points.join(' ')
 }
 
@@ -139,11 +139,11 @@ function generateFlowingPath(config: PatternConfig): string {
     const shift = (phase ?? 0) * width * 0.2
 
     return [
-        `M 0 ${height}`,
-        `L 0 ${cy + waveHeight * 0.8}`,
+        `M -20 ${height}`,
+        `L -20 ${cy + waveHeight * 0.8}`,
         `C ${width * 0.15 + shift} ${cy - waveHeight * 0.3}, ${width * 0.35 + shift} ${cy + waveHeight * 1.1}, ${width * 0.5} ${cy + waveHeight * 0.4}`,
-        `C ${width * 0.65 - shift} ${cy - waveHeight * 0.2}, ${width * 0.85 - shift} ${cy + waveHeight * 0.9}, ${width} ${cy + waveHeight * 0.5}`,
-        `L ${width} ${height}`,
+        `C ${width * 0.65 - shift} ${cy - waveHeight * 0.2}, ${width * 0.85 - shift} ${cy + waveHeight * 0.9}, ${width + 20} ${cy + waveHeight * 0.5}`,
+        `L ${width + 20} ${height}`,
         `Z`,
     ].join(' ')
 }
@@ -169,12 +169,12 @@ function generateRibbonPath(config: PatternConfig): string {
     const r4 = pr(4) * 0.3 + 0.25
 
     return [
-        `M 0 ${height}`,
-        `L 0 ${cy + waveHeight * r1}`,
+        `M -20 ${height}`,
+        `L -20 ${cy + waveHeight * r1}`,
         `C ${width * 0.12} ${cy - waveHeight * r2}, ${width * 0.28} ${cy + waveHeight * r3}, ${width * 0.38} ${cy + waveHeight * 0.1}`,
         `C ${width * 0.48} ${cy - waveHeight * r4}, ${width * 0.58} ${cy + waveHeight * r1}, ${width * 0.68} ${cy + waveHeight * r3}`,
-        `C ${width * 0.78} ${cy - waveHeight * r2}, ${width * 0.92} ${cy + waveHeight * r4}, ${width} ${cy + waveHeight * r1}`,
-        `L ${width} ${height}`,
+        `C ${width * 0.78} ${cy - waveHeight * r2}, ${width * 0.92} ${cy + waveHeight * r4}, ${width + 20} ${cy + waveHeight * r1}`,
+        `L ${width + 20} ${height}`,
         `Z`,
     ].join(' ')
 }
@@ -195,7 +195,7 @@ function generateLayeredOrganicPath(config: PatternConfig): string {
     }
 
     const points = 5
-    const segments: string[] = [`M 0 ${height}`, `L 0 ${cy + waveHeight * pr(0)}`]
+    const segments: string[] = [`M -20 ${height}`, `L -20 ${cy + waveHeight * pr(0)}`]
 
     for (let i = 0; i < points; i++) {
         const x1 = (width / points) * i + (width / points) * 0.3
@@ -205,7 +205,7 @@ function generateLayeredOrganicPath(config: PatternConfig): string {
         segments.push(`C ${x1} ${cy1}, ${x2 - (width / points) * 0.3} ${cy2}, ${x2} ${cy + waveHeight * pr(i + points)}`)
     }
 
-    segments.push(`L ${width} ${height}`, `Z`)
+    segments.push(`L ${width + 20} ${cy + waveHeight * pr(points - 1)}`, `L ${width + 20} ${height}`, `Z`)
     return segments.join(' ')
 }
 

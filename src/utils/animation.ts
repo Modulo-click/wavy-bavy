@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback, useState, useSyncExternalStore } from '
 import type { AnimationName, AnimationConfig } from '../types'
 import { generatePath } from './path-generator'
 import type { PatternName, PatternConfig } from '../types'
-import { KEYFRAME_GENERATORS } from './keyframes'
+import { KEYFRAME_GENERATORS, PATH_MORPH_GENERATORS } from './keyframes'
 
 // ============================================================
 // useReducedMotion — prefers-reduced-motion detection
@@ -52,6 +52,9 @@ function injectKeyframes(animationId: string, name: Exclude<AnimationName, 'none
     if (typeof document === 'undefined') return
     if (injectedAnimations.has(animationId)) return
 
+    // Path morphing animations are handled by WaveSection via SVG <style>, not here
+    if (name in PATH_MORPH_GENERATORS) return
+
     let css: string | undefined
 
     if (name === 'custom' && customKeyframes) {
@@ -59,7 +62,11 @@ function injectKeyframes(animationId: string, name: Exclude<AnimationName, 'none
         css = `@keyframes ${animationId} { ${customKeyframes} }`
     } else if (name !== 'custom') {
         const generator = KEYFRAME_GENERATORS[name as keyof typeof KEYFRAME_GENERATORS]
-        if (!generator) return
+        if (!generator) {
+            const available = [...Object.keys(KEYFRAME_GENERATORS), ...Object.keys(PATH_MORPH_GENERATORS)].join(', ')
+            console.warn(`[wavy-bavy] Unknown animation "${name}". Available: ${available}`)
+            return
+        }
         css = generator(animationId)
     }
 

@@ -37,7 +37,7 @@ function samplePathY(path: string, width: number, samples: number): number[] {
 
     if (points.length < 2) return new Array(samples).fill(0)
 
-    const wavePoints = points.filter(p => p.x >= 0 && p.x <= width)
+    const wavePoints = points.filter(p => p.x >= -20 && p.x <= width + 20)
     if (wavePoints.length < 2) return new Array(samples).fill(0)
 
     wavePoints.sort((a, b) => a.x - b.x)
@@ -69,7 +69,7 @@ function samplePathY(path: string, width: number, samples: number): number[] {
 function buildPathFromSamples(ys: number[], width: number, height: number): string {
     const samples = ys.length
     const segmentWidth = width / (samples - 1)
-    const parts: string[] = [`M 0 ${height}`, `L 0 ${ys[0]}`]
+    const parts: string[] = [`M -20 ${height}`, `L -20 ${ys[0]}`]
 
     for (let i = 0; i < samples - 1; i++) {
         const x0 = i * segmentWidth
@@ -79,7 +79,7 @@ function buildPathFromSamples(ys: number[], width: number, height: number): stri
         parts.push(`C ${cp1x} ${ys[i]}, ${cp2x} ${ys[i + 1]}, ${x1} ${ys[i + 1]}`)
     }
 
-    parts.push(`L ${width} ${height}`, `Z`)
+    parts.push(`L ${width + 20} ${ys[ys.length - 1]}`, `L ${width + 20} ${height}`, `Z`)
     return parts.join(' ')
 }
 
@@ -163,4 +163,99 @@ export function generateInterlockPaths(options: InterlockOptions): DualPathResul
     const pathB = buildPathFromSamples(pathBYs, width, height)
 
     return { pathA, pathB, baseCurve: basePath }
+}
+
+export interface CrossBoundaryOptions {
+    upperConfig: { pattern: PatternName; height: number; amplitude: number; frequency: number; phase?: number; mirror?: boolean; seed?: number }
+    lowerConfig: { pattern: PatternName; height: number; amplitude: number; frequency: number; phase?: number; mirror?: boolean; seed?: number }
+    mode?: InterlockMode
+    intensity?: number
+    gap?: number
+}
+
+/**
+ * Generate two interlocked paths from independent upper/lower wave configs.
+ *
+ * Each side keeps its own pattern character while meshing at the boundary.
+ * Algorithm:
+ * 1. Use max(upper.height, lower.height) as shared height
+ * 2. Generate independent paths from each config
+ * 3. Sample Y values, compute midline, preserve each curve's character
+ * 4. Apply mode multipliers and rebuild smooth paths
+ */
+export function generateCrossBoundaryPaths(options: CrossBoundaryOptions): DualPathResult {
+    const {
+        upperConfig,
+        lowerConfig,
+        mode = 'interlock',
+        intensity = 0.5,
+        gap = 0,
+    } = options
+
+    const width = DEFAULT_VIEWBOX_WIDTH
+    const samples = 20
+    const sharedHeight = Math.max(upperConfig.height, lowerConfig.height)
+
+    // Generate independent paths from each config
+    const upperPattern = upperConfig.pattern === 'custom' ? 'smooth' : upperConfig.pattern
+    const lowerPattern = lowerConfig.pattern === 'custom' ? 'smooth' : lowerConfig.pattern
+
+    const pathUpper = generatePath(upperPattern, {
+        width,
+        height: sharedHeight,
+        amplitude: upperConfig.amplitude,
+        frequency: upperConfig.frequency,
+        phase: upperConfig.phase ?? 0,
+        mirror: upperConfig.mirror ?? false,
+        seed: upperConfig.seed,
+    })
+
+    const pathLower = generatePath(lowerPattern, {
+        width,
+        height: sharedHeight,
+        amplitude: lowerConfig.amplitude,
+        frequency: lowerConfig.frequency,
+        phase: lowerConfig.phase ?? 0,
+        mirror: lowerConfig.mirror ?? false,
+        seed: lowerConfig.seed,
+    })
+
+    // Flush mode: return raw paths unmodified
+    if (mode === 'flush') {
+        return { pathA: pathUpper, pathB: pathLower, baseCurve: pathUpper }
+    }
+
+    // Sample Y values from each path
+    const upperYs = samplePathY(pathUpper, width, samples)
+    const lowerYs = samplePathY(pathLower, width, samples)
+
+    // Compute midline and preserve each curve's character
+    const halfGap = gap / 2
+    const maxOffset = sharedHeight * Math.max(upperConfig.amplitude, lowerConfig.amplitude) * intensity * 0.5
+
+    const modeFactors: Record<InterlockMode, { a: number; b: number }> = {
+        interlock: { a: -1, b: 1 },
+        overlap: { a: -1.3, b: 0.7 },
+        apart: { a: -0.6, b: 1.4 },
+        flush: { a: 0, b: 0 },
+    }
+    const factors = modeFactors[mode]
+
+    const pathAYs: number[] = []
+    const pathBYs: number[] = []
+
+    for (let i = 0; i < samples; i++) {
+        const midY = (upperYs[i] + lowerYs[i]) / 2
+        const deviationA = (upperYs[i] - midY) * 0.7
+        const deviationB = (lowerYs[i] - midY) * 0.7
+
+        pathAYs.push(midY + deviationA + factors.a * maxOffset - halfGap)
+        pathBYs.push(midY + deviationB + factors.b * maxOffset + halfGap)
+    }
+
+    // Rebuild smooth paths
+    const pathA = buildPathFromSamples(pathAYs, width, sharedHeight)
+    const pathB = buildPathFromSamples(pathBYs, width, sharedHeight)
+
+    return { pathA, pathB, baseCurve: pathUpper }
 }

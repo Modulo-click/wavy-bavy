@@ -184,7 +184,8 @@ class WavySectionElement extends HTMLElement {
         }
 
         if (morphAnimIdA) {
-            pathEl.style.animation = `${morphAnimIdA} 10s ease-in-out infinite`
+            const dur = this._getNumAttr('animation-duration', 10)
+            pathEl.style.animation = `${morphAnimIdA} ${dur}s ease-in-out infinite`
         }
 
         svg.appendChild(pathEl)
@@ -200,8 +201,8 @@ class WavySectionElement extends HTMLElement {
             }
 
             if (morphAnimIdB) {
-                pathBEl.style.animation = `${morphAnimIdB} 10s ease-in-out infinite`
-                pathBEl.style.animationDelay = '-3s'
+                const dur = this._getNumAttr('animation-duration', 10)
+                pathBEl.style.animation = `${morphAnimIdB} ${dur}s ease-in-out infinite`
             }
 
             svg.appendChild(pathBEl)

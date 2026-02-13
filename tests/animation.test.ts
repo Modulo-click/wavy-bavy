@@ -89,10 +89,17 @@ describe('useWaveAnimation', () => {
         expect(result.current.isAnimating).toBe(false)
     })
 
-    it('returns animation style for animate=flow', () => {
-        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow' }))
+    it('returns animation style for animate=pulse (transform-based)', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'pulse' }))
         expect(result.current.animationStyle.animation).toBeDefined()
         expect(result.current.animationStyle.animation).toContain('wavy-bavy-anim-')
+        expect(result.current.isAnimating).toBe(true)
+    })
+
+    it('returns animation style for flow but no keyframe injection (path morph)', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow' }))
+        // flow is now a path morph animation — useWaveAnimation still marks it as active
+        // but injectKeyframes silently returns (path morphing handled by WaveSection)
         expect(result.current.isAnimating).toBe(true)
     })
 
@@ -114,7 +121,7 @@ describe('useWaveAnimation', () => {
     })
 
     it('pause/resume toggles animation state', () => {
-        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow' }))
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'pulse' }))
         expect(result.current.isAnimating).toBe(true)
 
         act(() => result.current.pause())
@@ -126,9 +133,9 @@ describe('useWaveAnimation', () => {
         expect(result.current.animationStyle.animationPlayState).toBe('running')
     })
 
-    it('accepts boolean true to default to flow', () => {
+    it('accepts boolean true to default to flow (path morph)', () => {
         const { result } = renderHook(() => useWaveAnimation({ animate: true }))
-        expect(result.current.animationStyle.animation).toBeDefined()
+        // true defaults to 'flow' which is now path morph — still marked as animating
         expect(result.current.isAnimating).toBe(true)
     })
 })
@@ -139,7 +146,7 @@ describe('useWaveAnimation', () => {
 
 describe('scroll-linked animation style', () => {
     it('generates animation style with duration for scroll-linking', () => {
-        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow', duration: 6 }))
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'pulse', duration: 6 }))
         const style = result.current.animationStyle
         // The animation string should contain the duration
         expect(style.animation).toContain('6s')
@@ -158,7 +165,7 @@ describe('scroll-linked animation style', () => {
     })
 
     it('animation play state can be used for scroll-linked pausing', () => {
-        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow' }))
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'pulse' }))
         // When used with scroll-linked animation, playState is set to 'paused'
         // and animation-delay is used to control position
         expect(result.current.animationStyle.animationPlayState).toBe('running')
@@ -171,8 +178,8 @@ describe('scroll-linked animation style', () => {
         expect(result.current.animationStyle.animation).toContain('wavy-bavy-anim-')
     })
 
-    it('duration override works with any animation type', () => {
-        for (const anim of ['flow', 'pulse', 'morph', 'ripple', 'bounce'] as const) {
+    it('duration override works with transform animation types', () => {
+        for (const anim of ['pulse', 'bounce'] as const) {
             const { result } = renderHook(() => useWaveAnimation({ animate: anim, duration: 8 }))
             expect(result.current.animationStyle.animation).toContain('8s')
         }

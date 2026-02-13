@@ -102,9 +102,22 @@ export function WaveProvider({ defaults: userDefaults, debug: debugProp = false,
             let changed = false
             const next = prev.map((s) => {
                 if (s.id !== id) return s
-                // Check if any value actually differs
+                // Check if any value actually differs (deep compare for plain objects)
                 for (const key of Object.keys(partial) as (keyof SectionRegistration)[]) {
-                    if (s[key] !== partial[key]) {
+                    const oldVal = s[key]
+                    const newVal = partial[key]
+                    // Skip DOM element comparison (circular refs) — use reference equality
+                    if (key === 'element') {
+                        if (oldVal !== newVal) {
+                            changed = true
+                            return { ...s, ...partial }
+                        }
+                    } else if (typeof oldVal === 'object' && oldVal !== null && typeof newVal === 'object' && newVal !== null) {
+                        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                            changed = true
+                            return { ...s, ...partial }
+                        }
+                    } else if (oldVal !== newVal) {
                         changed = true
                         return { ...s, ...partial }
                     }
@@ -115,22 +128,27 @@ export function WaveProvider({ defaults: userDefaults, debug: debugProp = false,
         })
     }, [])
 
-    // Get the section immediately before a given ID
+    // Ref-based lookups — avoids recreating callbacks on every sections change,
+    // preventing unnecessary context-triggered re-renders of all consumers.
+    const sectionsRef = useRef(sections)
+    sectionsRef.current = sections
+
     const getSectionBefore = useCallback(
         (id: string): SectionRegistration | null => {
-            const idx = sections.findIndex((s) => s.id === id)
-            return idx > 0 ? sections[idx - 1] : null
+            const s = sectionsRef.current
+            const idx = s.findIndex((sec) => sec.id === id)
+            return idx > 0 ? s[idx - 1] : null
         },
-        [sections],
+        [],
     )
 
-    // Get the section immediately after a given ID
     const getSectionAfter = useCallback(
         (id: string): SectionRegistration | null => {
-            const idx = sections.findIndex((s) => s.id === id)
-            return idx >= 0 && idx < sections.length - 1 ? sections[idx + 1] : null
+            const s = sectionsRef.current
+            const idx = s.findIndex((sec) => sec.id === id)
+            return idx >= 0 && idx < s.length - 1 ? s[idx + 1] : null
         },
-        [sections],
+        [],
     )
 
     const value = useMemo<WaveContextValue>(

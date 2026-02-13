@@ -1,0 +1,68 @@
+# wavy-bavy Library — Phase 1: Core Architecture
+
+- [x] Project Scaffolding
+    - [x] Initialize project at `d:\TMM\wavy-bavy`
+    - [x] Create `package.json` (name: wavy-bavy, org: @modulo-click)
+    - [x] Create `tsconfig.json`
+    - [x] Create `tsup.config.ts` (ESM + CJS build)
+    - [x] Install dependencies
+- [x] Core Types & Constants
+    - [x] Create `src/types.ts` (all interfaces)
+    - [x] Create `src/constants.ts` (defaults/presets)
+- [x] Context System
+    - [x] Create `src/context/WaveProvider.tsx`
+    - [x] Create `src/context/useWaveContext.ts`
+- [x] Main Components
+    - [x] Create `src/components/WaveSection.tsx` (wrapper)
+    - [x] Create `src/components/WaveRenderer.tsx` (SVG renderer)
+    - [x] Create `src/components/WaveLayer.tsx` (stacked layers)
+- [x] Utility Functions
+    - [x] Create `src/utils/path-generator.ts` (SVG path math)
+    - [x] Create `src/utils/color-utils.ts` (color parsing)
+- [x] Public API
+    - [x] Create `src/index.ts` (exports)
+    - [x] Create `README.md`, `LICENSE`, `.gitignore`
+- [x] Build & Verify
+    - [x] TypeScript strict-mode: 0 errors
+    - [x] tsup build: ESM (21.77 KB) + CJS (22.55 KB) + DTS (12.75 KB)
+- [x] Playground Demo & Verification
+    - [x] Create Vite + React playground
+    - [x] Demo all patterns (smooth, organic, sharp, mountain)
+    - [x] Demo presets (hero, footer, dramatic, subtle)
+    - [x] Demo effects (shadow, glow, layers)
+    - [x] Verify in browser — all 11 sections rendering correctly
+
+# Phase 2: Animations & Clip-path
+
+- [x] Animation system
+    - [x] `animation.ts`: 5 types (flow, pulse, morph, ripple, bounce)
+    - [x] `useWaveAnimation` hook with CSS keyframe injection & pause/resume
+    - [x] `generateMorphFrames` utility for SVG path morphing
+    - [x] Wired into `WaveRenderer` (animationStyle prop) and `WaveSection` (animate/animationDuration props)
+- [x] `flipPathVertically` implementation
+    - [x] Full SVG path command parsing (M, L, C, S, Q, T, A, H, V)
+    - [x] Handles relative + absolute commands, arc sweep flag inversion
+- [x] Clip-path for background images
+    - [x] `clip-path.ts`: `generateClipPath` + `generateDualClipPath`
+    - [x] `clipImage` prop wired into `WaveSection`
+- [x] Barrel exports updated with all new utilities
+- [x] Build verified: 0 TypeScript errors, ESM (29.85 KB) + CJS (30.80 KB) + DTS (15.03 KB)
+- [x] Playground animation demo
+    - [x] All 5 animation types demoed: flow, pulse, bounce, ripple, morph
+- [x] Tailwind CSS plugin
+    - [x] `src/tailwind/plugin.ts`: utility classes (wave-{pattern}, wave-h-{size}, wave-animate-{name}, etc.)
+    - [x] `src/tailwind/theme.ts`: default theme tokens
+    - [x] JIT support via `matchUtilities` (arbitrary values)
+    - [x] Custom preset utilities via `waves` option
+    - [x] Separate build entry: ESM (3.32 KB) + CJS (3.41 KB) + DTS (1.74 KB)
+    - [x] package.json exports map updated with types-first ordering
+- [x] Unit tests with vitest
+    - [x] 106 tests across 8 test files — all passing
+    - [x] `tests/color-utils.test.ts` (24 tests): hexToRgb, rgbToHex, interpolateColors, parseBackground, isDark
+    - [x] `tests/path-generator.test.ts` (23 tests): generatePath, flipPathVertically, generateLayeredPaths
+    - [x] `tests/clip-path.test.ts` (7 tests): generateClipPath, generateDualClipPath
+    - [x] `tests/animation.test.ts` (6 tests): generateMorphFrames
+    - [x] `tests/constants.test.ts` (10 tests): DEFAULTS, BREAKPOINTS, PATTERN_REGISTRY, PRESETS
+    - [x] `tests/tailwind-plugin.test.ts` (7 tests): plugin exports, addUtilities, matchUtilities
+    - [x] `tests/context.test.tsx` (6 tests): useWaveContext, useOptionalWaveContext
+    - [x] `tests/components.test.tsx` (23 tests): WaveProvider, WaveSection, WaveRenderer, WaveLayer

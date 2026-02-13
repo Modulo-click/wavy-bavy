@@ -38,7 +38,8 @@ export function generatePath(
 
     const generator = PATTERN_REGISTRY[pattern]
     if (!generator) {
-        console.warn(`[wavy-bavy] Unknown pattern "${pattern}", falling back to "smooth"`)
+        const available = Object.keys(PATTERN_REGISTRY).join(', ')
+        console.warn(`[wavy-bavy] Unknown pattern "${pattern}", falling back to "smooth". Available patterns: ${available}`)
         return PATTERN_REGISTRY['smooth'](fullConfig)
     }
 

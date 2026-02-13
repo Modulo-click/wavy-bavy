@@ -14,17 +14,17 @@ export { WaveProvider } from './context/WaveProvider'
 export { useWaveContext, useOptionalWaveContext } from './context/useWaveContext'
 
 // Utilities
-export { parseBackground, hexToRgb, rgbToHex, interpolateColors, isDark } from './utils/color-utils'
+export { parseBackground, hexToRgb, rgbToHex, interpolateColors, isDark, generateAutoGradient } from './utils/color-utils'
 export { generatePath, generateLayeredPaths, flipPathVertically } from './utils/path-generator'
 export { useWaveAnimation, useReducedMotion, generateMorphFrames } from './utils/animation'
 export type { UseWaveAnimationOptions, UseWaveAnimationResult } from './utils/animation'
-export { KEYFRAME_GENERATORS, PATH_MORPH_GENERATORS, generatePathKeyframes } from './utils/keyframes'
+export { KEYFRAME_GENERATORS, PATH_MORPH_GENERATORS, generatePathKeyframes, generateDualPathMorphKeyframes } from './utils/keyframes'
 export { generateClipPath, generateDualClipPath } from './utils/clip-path'
 export { useIntersection, useMergedRef } from './utils/use-intersection'
 export type { UseIntersectionOptions } from './utils/use-intersection'
 export { optimizePath } from './utils/path-optimizer'
-export { generateInterlockPaths, autoSeed } from './utils/interlock-generator'
-export type { InterlockOptions } from './utils/interlock-generator'
+export { generateInterlockPaths, generateCrossBoundaryPaths, autoSeed } from './utils/interlock-generator'
+export type { InterlockOptions, CrossBoundaryOptions } from './utils/interlock-generator'
 export { createScrollTracker } from './utils/scroll-tracker'
 export { useScrollProgress } from './utils/use-scroll-progress'
 export type { ScrollProgressOptions } from './utils/use-scroll-progress'
@@ -88,9 +88,11 @@ export type {
     ResponsiveValue,
     Breakpoint,
 
-    // Background
+    // Background & Gradients
     BackgroundValue,
     ParsedBackground,
+    GradientStop,
+    GradientConfig,
 
     // Context
     WaveContextValue,
@@ -114,6 +116,7 @@ export type {
     WaveSeparationConfig,
     InterlockMode,
     DualPathResult,
+    WaveEdgeConfig,
 
     // Scroll Tracker
     ScrollTracker,

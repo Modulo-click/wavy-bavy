@@ -1,4 +1,4 @@
-import type { ParsedBackground } from '../types'
+import type { ParsedBackground, GradientConfig } from '../types'
 
 // ============================================================
 // Color Parsing
@@ -162,4 +162,21 @@ export function isDark(hex: string): boolean {
     // Luminance formula
     const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255
     return luminance < 0.5
+}
+
+/**
+ * Generate a gradient config that blends from one color to another.
+ * Creates a 3-stop linear gradient: from → interpolated midpoint → to.
+ */
+export function generateAutoGradient(fromColor: string, toColor: string): GradientConfig {
+    const midColor = interpolateColors(fromColor, toColor, 0.5)
+    return {
+        type: 'linear',
+        angle: 90, // top to bottom
+        stops: [
+            { color: fromColor, offset: 0 },
+            { color: midColor, offset: 0.5 },
+            { color: toColor, offset: 1 },
+        ],
+    }
 }

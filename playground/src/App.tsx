@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
 import { WaveProvider, WaveSection, WaveSectionCSS, useScrollProgress } from 'wavy-bavy'
 import DevToolsDemo from './DevToolsDemo'
+import DemoSection from './DemoSection'
 
-// ── Scroll Progress Indicator (uses useScrollProgress hook directly) ──
+// ── Scroll Progress Indicator ──
 function ScrollProgressBar() {
     const [ref, progress] = useScrollProgress()
     return (
@@ -20,7 +21,7 @@ function ScrollProgressBar() {
 }
 
 export default function App() {
-    // ── State for intersection callback demos ──
+    // ── State for intersection callback demo ──
     const [callbackLog, setCallbackLog] = useState<string[]>([])
     const [sectionProgress, setSectionProgress] = useState(0)
 
@@ -42,9 +43,9 @@ export default function App() {
 
             <WaveProvider debug={false}>
                 {/* ============================================================ */}
-                {/* 1. Hero -- White */}
+                {/* HERO */}
                 {/* ============================================================ */}
-                <WaveSection background="#ffffff" wavePosition="bottom">
+                <DemoSection label="Hero" role="hero" background="#ffffff" wavePosition="bottom">
                     <div className="section-content">
                         <div className="badge" style={{ background: '#e8e4ff', color: '#6c5ce7' }}>
                             Playground
@@ -52,22 +53,17 @@ export default function App() {
                         <h1>wavy-bavy</h1>
                         <p>
                             Seamless, automatic wave transitions between page sections.
-                            Scroll down to see every pattern, preset, effect, and interaction in action.
+                            Scroll down to explore patterns, animations, effects, and interactions.
                         </p>
-                        <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <span className="phase-tag phase-1">Phase 1-2: Core</span>
-                            <span className="phase-tag phase-3">Phase 3: Effects</span>
-                            <span className="phase-tag phase-4">Phase 4: Scroll</span>
-                            <span className="phase-tag phase-5">Phase 5: DevTools</span>
-                            <span className="phase-tag phase-75">Phase 7.5: Wave Polish</span>
-                        </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
                 {/* ============================================================ */}
-                {/* 2. Smooth Pattern -- Light Gray */}
+                {/* PATTERNS */}
                 {/* ============================================================ */}
-                <WaveSection background="#F0F0EE" pattern="smooth">
+
+                {/* ── Smooth ── */}
+                <DemoSection label="Smooth" background="#F0F0EE" pattern="smooth">
                     <div className="section-content">
                         <div className="badge" style={{ background: '#d4edda', color: '#155724' }}>
                             Pattern
@@ -91,12 +87,10 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ============================================================ */}
-                {/* 3. Organic Pattern -- Dark */}
-                {/* ============================================================ */}
-                <WaveSection background="#1a1a2e" pattern="organic" seed={42}>
+                {/* ── Organic ── */}
+                <DemoSection label="Organic" background="#1a1a2e" pattern="organic" seed={42}>
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(108, 92, 231, 0.25)', color: '#a29bfe' }}>
                             Pattern
@@ -116,130 +110,175 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ============================================================ */}
-                {/* 4. Sharp Pattern -- Teal */}
-                {/* ============================================================ */}
-                <WaveSection background="#00b894" pattern="sharp" frequency={3} amplitude={0.6}>
+                {/* ── Geometric: Sharp + Mountain ── */}
+                <DemoSection
+                    label="Geometric"
+                    background="#00b894"
+                    pattern="sharp"
+                    frequency={3}
+                    amplitude={0.6}
+                    upperWave={{ pattern: 'organic', amplitude: 0.5, frequency: 1, seed: 55 }}
+                    lowerWave={{ pattern: 'sharp', amplitude: 0.6, frequency: 3 }}
+                >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                             Pattern
                         </div>
-                        <h2>Sharp</h2>
+                        <h2>Geometric Patterns</h2>
                         <p>
-                            Geometric angular waves. Multiple peaks with adjustable frequency.
+                            Angular waves and triangle peaks. Switch between <code>sharp</code> and <code>mountain</code> using the pattern control below.
                         </p>
+                        <div className="demo-grid">
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Sharp</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Zigzag angular wave with adjustable frequency</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Mountain</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Triangle peaks -- mountain range silhouette</p>
+                            </div>
+                        </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ============================================================ */}
-                {/* 5. Mountain Pattern -- Warm */}
-                {/* ============================================================ */}
-                <WaveSection background="#ff7675" pattern="mountain" frequency={4} amplitude={0.7}>
+                {/* ── Advanced: Flowing + Ribbon + Layered-Organic ── */}
+                <DemoSection
+                    label="Advanced Patterns"
+                    background="#ff7675"
+                    pattern="flowing"
+                    amplitude={0.7}
+                    height={140}
+                    upperWave={{ pattern: 'flowing', amplitude: 0.7, frequency: 1 }}
+                    lowerWave={{ pattern: 'ribbon', amplitude: 0.5, frequency: 2, seed: 33 }}
+                >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                             Pattern
                         </div>
-                        <h2>Mountain</h2>
+                        <h2>Advanced Patterns</h2>
                         <p>
-                            Triangle peak shapes. Creates a mountain range silhouette effect.
+                            Switch between <code>flowing</code>, <code>ribbon</code>, and <code>layered-organic</code> using the pattern control.
                         </p>
+                        <div className="demo-grid">
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Flowing</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Dramatic S-curve for hero sections</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Ribbon</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Varying thickness, seed-controlled personality</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Layered Organic</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Dense organic contour with 5 bezier segments</p>
+                            </div>
+                        </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
                 {/* ============================================================ */}
-                {/* 6. Animation: Flow -- Ocean Blue */}
+                {/* ANIMATIONS */}
                 {/* ============================================================ */}
-                <WaveSection
+
+                {/* ── Transform Animations: Flow + Pulse + Bounce ── */}
+                <DemoSection
+                    label="Animations"
                     background="#0984e3"
                     pattern="smooth"
                     animate="flow"
                     animationDuration={4}
+                    showAnimationControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                             Animation
                         </div>
-                        <h2>Flow Animation</h2>
+                        <h2>Animations</h2>
                         <p>
-                            Smooth horizontal wave motion. Watch the waves glide left-to-right.
+                            Switch between animation types using the control below.
+                            Flow uses SVG path morphing; pulse and bounce use CSS transforms.
                         </p>
-                    </div>
-                </WaveSection>
-
-                {/* ============================================================ */}
-                {/* 7. Animation: Pulse -- Emerald */}
-                {/* ============================================================ */}
-                <WaveSection
-                    background="#00cec9"
-                    pattern="organic"
-                    seed={77}
-                    animate="pulse"
-                    animationDuration={3}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Animation
+                        <div className="demo-grid">
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Flow</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Gentle horizontal phase drift via path morphing</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Pulse</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Rhythmic scale breathing effect</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Bounce</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Playful elastic vertical bounce</p>
+                            </div>
                         </div>
-                        <h2>Pulse Animation</h2>
-                        <p>
-                            Rhythmic scale pulse -- the wave breathes in and out.
-                        </p>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ============================================================ */}
-                {/* 8. Animation: Bounce -- Coral */}
-                {/* ============================================================ */}
-                <WaveSection
+                {/* ── Path Morphing: Drift + Breathe + Undulate + Ripple-Out ── */}
+                <DemoSection
+                    label="Path Morphing"
                     background="#e17055"
-                    pattern="sharp"
-                    frequency={2}
-                    animate="bounce"
-                    animationDuration={2}
+                    pattern="organic"
+                    seed={33}
+                    animate="undulate"
+                    amplitude={0.7}
+                    height={160}
+                    glow={{ color: '#fd79a8', intensity: 15, opacity: 0.4 }}
+                    showAnimationControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                             Animation
                         </div>
-                        <h2>Bounce Animation</h2>
+                        <h2>Path Morphing</h2>
                         <p>
-                            Playful vertical bounce effect -- elastic and fun.
+                            The wave shape itself changes via SVG <code>d: path()</code> CSS interpolation.
+                            Switch between drift, breathe, undulate, and ripple-out.
                         </p>
+                        <div className="demo-grid">
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Drift</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Horizontal phase glide</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Breathe</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Amplitude grows and shrinks</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Undulate</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Phase + amplitude combined</p>
+                            </div>
+                            <div className="demo-card">
+                                <h3 style={{ color: '#fff' }}>Ripple-Out</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Center-outward disturbance</p>
+                            </div>
+                        </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
                 {/* ============================================================ */}
-                {/* PHASE 3: EFFECTS SHOWCASE */}
+                {/* EFFECTS */}
                 {/* ============================================================ */}
 
-                {/* ── Phase 3 Banner ── */}
-                <WaveSection background="#2d3436" pattern="smooth">
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <span className="phase-tag phase-3" style={{ fontSize: '1rem' }}>Phase 3</span>
-                        <h1 style={{ marginTop: 12 }}>Effects & Performance</h1>
-                        <p>
-                            Stroke outlines, frosted glass blur, texture overlays, inner shadows,
-                            custom keyframes, and CSS-only mode.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 3a. Stroke / Outline Waves ── */}
-                <WaveSection
+                {/* ── Stroke Effects ── */}
+                <DemoSection
+                    label="Stroke Effects"
                     background="#ffffff"
                     pattern="smooth"
                     stroke={{ color: '#6c5ce7', width: 3, fill: true }}
                     shadow={true}
+                    showEffectControls
                 >
                     <div className="section-content">
                         <div className="badge" style={{ background: '#e8e4ff', color: '#6c5ce7' }}>
-                            Phase 3 Effect
+                            Effect
                         </div>
-                        <h2>Stroke / Outline</h2>
+                        <h2>Stroke Effects</h2>
                         <p>
-                            Adds an SVG stroke to the wave path. Combine with fill or use stroke-only mode.
+                            SVG stroke outlines on the wave path. Supports solid, dashed, fill or outline-only modes.
                         </p>
                         <div className="demo-grid">
                             <div className="demo-card light">
@@ -248,7 +287,7 @@ export default function App() {
                             </div>
                             <div className="demo-card light">
                                 <h3>Stroke Width</h3>
-                                <p><code>width: 3</code> -- Thick outline</p>
+                                <p><code>width: 3</code> -- Adjustable via slider</p>
                             </div>
                             <div className="demo-card light">
                                 <h3>+ Shadow</h3>
@@ -256,57 +295,32 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ── 3b. Stroke-Only (no fill) + Dash ── */}
-                <WaveSection
-                    background="#f8f9fa"
-                    pattern="organic"
-                    seed={33}
-                    stroke={{ color: '#e17055', width: 2, dashArray: '8 4', fill: false }}
-                >
-                    <div className="section-content">
-                        <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
-                            Phase 3 Effect
-                        </div>
-                        <h2>Dashed Stroke (No Fill)</h2>
-                        <p>
-                            Outline-only wave with a dashed stroke pattern. No fill -- just the contour.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card light">
-                                <h3>Dashed</h3>
-                                <p><code>dashArray: '8 4'</code></p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>No Fill</h3>
-                                <p><code>fill: false</code> -- Outline only</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 3c. Blur / Frosted Glass ── */}
-                <WaveSection
+                {/* ── Blur + Glow ── */}
+                <DemoSection
+                    label="Blur + Glow"
                     background="#6c5ce7"
                     pattern="smooth"
-                    blur={{ radius: 12, opacity: 0.6, saturation: 1.5 }}
+                    blur={{ radius: 12, opacity: 0.6, saturation: 1.5, section: true }}
                     animate="flow"
                     animationDuration={6}
+                    showAnimationControls
+                    showEffectControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 3 Effect
+                            Effect
                         </div>
-                        <h2>Blur / Frosted Glass</h2>
+                        <h2>Blur + Glow</h2>
                         <p>
-                            Backdrop-filter blur creates a frosted glass effect on the wave.
-                            Combined with flow animation for a dreamy look.
+                            Frosted glass backdrop-filter extends to both the wave and section content.
+                            Combined with path-morphing flow for a dreamy look.
                         </p>
                         <div className="demo-grid">
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Blur Radius</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>radius: 12</code></p>
+                                <h3 style={{ color: '#fff' }}>Section Blur</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>section: true</code> -- Blur extends to content</p>
                             </div>
                             <div className="demo-card">
                                 <h3 style={{ color: '#fff' }}>Saturation</h3>
@@ -314,27 +328,31 @@ export default function App() {
                             </div>
                             <div className="demo-card">
                                 <h3 style={{ color: '#fff' }}>+ Flow</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Animated with <code>animate="flow"</code></p>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Path morphing <code>animate="flow"</code></p>
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ── 3d. Texture Overlay ── */}
-                <WaveSection
+                {/* ── Texture + Shadows ── */}
+                <DemoSection
+                    label="Texture + Shadows"
                     background="#0c0c1d"
                     pattern="organic"
                     seed={88}
+                    height={160}
                     texture={{ type: 'turbulence', frequency: 0.03, octaves: 4, scale: 8, seed: 42 }}
                     glow={{ color: '#00b894', intensity: 15, opacity: 0.4 }}
+                    innerShadow={{ color: 'rgba(0,0,0,0.35)', blur: 12, offsetX: 0, offsetY: 4 }}
+                    showEffectControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(0, 184, 148, 0.25)', color: '#55efc4' }}>
-                            Phase 3 Effect
+                            Effect
                         </div>
-                        <h2>Texture Overlay</h2>
+                        <h2>Texture + Shadows</h2>
                         <p>
-                            SVG feTurbulence + feDisplacementMap creates a distorted, organic texture.
+                            SVG feTurbulence creates distorted texture. Inner shadow adds a carved, inset look.
                             Combined with glow for an ethereal effect.
                         </p>
                         <div className="demo-grid">
@@ -343,8 +361,8 @@ export default function App() {
                                 <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>frequency: 0.03</code></p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Displacement</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>scale: 8</code> -- Intense warping</p>
+                                <h3 style={{ color: '#fff' }}>Inner Shadow</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>blur: 12, offsetY: 4</code></p>
                             </div>
                             <div className="demo-card">
                                 <h3 style={{ color: '#fff' }}>+ Glow</h3>
@@ -352,73 +370,11 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ── 3e. Inner Shadow ── */}
-                <WaveSection
-                    background="#dfe6e9"
-                    pattern="smooth"
-                    height={160}
-                    innerShadow={{ color: 'rgba(0,0,0,0.35)', blur: 12, offsetX: 0, offsetY: 4 }}
-                >
-                    <div className="section-content">
-                        <div className="badge" style={{ background: '#b2bec3', color: '#2d3436' }}>
-                            Phase 3 Effect
-                        </div>
-                        <h2>Inner Shadow</h2>
-                        <p>
-                            SVG filter-based inner shadow creates a carved, inset look on the wave.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card light">
-                                <h3>Blur Radius</h3>
-                                <p><code>blur: 12</code> -- Soft inset shadow</p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Offset</h3>
-                                <p><code>offsetY: 4</code> -- Directional depth</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 3f. Custom Keyframes Animation ── */}
-                <WaveSection
-                    background="#e84393"
-                    pattern="smooth"
-                    animate="custom"
-                    animationDuration={3}
-                    customKeyframes={`
-                        0% { transform: translateX(0) skewX(0deg); }
-                        25% { transform: translateX(-2%) skewX(-2deg); }
-                        50% { transform: translateX(0) skewX(0deg); }
-                        75% { transform: translateX(2%) skewX(2deg); }
-                        100% { transform: translateX(0) skewX(0deg); }
-                    `}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 3 Animation
-                        </div>
-                        <h2>Custom Keyframes</h2>
-                        <p>
-                            Write your own CSS @keyframes. This wave uses a custom skew + translate effect.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Custom CSS</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>animate="custom"</code></p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Skew Effect</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>translateX + skewX combined</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 3g. Combined Effects ── */}
-                <WaveSection
+                {/* ── Combined Effects ── */}
+                <DemoSection
+                    label="Combined Effects"
                     background="#2d3436"
                     pattern="organic"
                     seed={66}
@@ -429,10 +385,12 @@ export default function App() {
                     innerShadow={{ color: 'rgba(0,0,0,0.3)', blur: 10, offsetX: 0, offsetY: 3 }}
                     animate="morph"
                     animationDuration={8}
+                    showAnimationControls
+                    showEffectControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(108, 92, 231, 0.3)', color: '#a29bfe' }}>
-                            Phase 3 Composition
+                            Effect
                         </div>
                         <h2>Combined Effects</h2>
                         <p>
@@ -453,136 +411,34 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                </WaveSection>
-
-                {/* ── 3h. CSS-Only Mode (WaveSectionCSS) ── */}
-                <WaveSectionCSS
-                    background="#fdcb6e"
-                    pattern="smooth"
-                    height={100}
-                    amplitude={0.4}
-                    wavePosition="both"
-                >
-                    <div className="section-content">
-                        <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
-                            Phase 3 Mode
-                        </div>
-                        <h2>CSS-Only Mode</h2>
-                        <p>
-                            <code>&lt;WaveSectionCSS&gt;</code> uses CSS clip-path polygon instead of SVG.
-                            No animation, no context, minimal JS -- perfect for static pages and SSG.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card light">
-                                <h3>Zero SVG</h3>
-                                <p>Pure CSS <code>clip-path: polygon()</code></p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Tiny Footprint</h3>
-                                <p>No context, no IntersectionObserver, no animation overhead</p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Both Edges</h3>
-                                <p><code>wavePosition="both"</code> -- Clipped top and bottom</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSectionCSS>
+                </DemoSection>
 
                 {/* ============================================================ */}
-                {/* PHASE 4: SCROLL & INTERACTION SHOWCASE */}
+                {/* INTERACTION */}
                 {/* ============================================================ */}
 
-                {/* ── Phase 4 Banner ── */}
-                <WaveSection background="#0c0c1d" pattern="mountain" frequency={3} amplitude={0.5}>
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <span className="phase-tag phase-4" style={{ fontSize: '1rem' }}>Phase 4</span>
-                        <h1 style={{ marginTop: 12 }}>Scroll & Interaction</h1>
-                        <p>
-                            Scroll-linked animations, parallax layers, hover effects,
-                            intersection callbacks, and scroll velocity detection.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4a. Hover Effects ── */}
-                <WaveSection
-                    background="#ffffff"
-                    pattern="smooth"
-                    hover={{ scale: 1.04, lift: -6, glow: false, transition: 'transform 0.3s ease' }}
-                    shadow={true}
-                >
-                    <div className="section-content">
-                        <div className="badge" style={{ background: '#d4edda', color: '#155724' }}>
-                            Phase 4 Interaction
-                        </div>
-                        <h2>Hover Effects</h2>
-                        <p>
-                            Hover over the wave below to see it scale up and lift.
-                            Uses CSS transforms with smooth transitions.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card light">
-                                <h3>Scale</h3>
-                                <p><code>scale: 1.04</code> -- Grows on hover</p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Lift</h3>
-                                <p><code>lift: -6</code> -- Moves up 6px</p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Smooth</h3>
-                                <p><code>transition: '0.3s ease'</code></p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4b. Hover + Glow Boost ── */}
-                <WaveSection
-                    background="#2d3436"
-                    pattern="organic"
-                    seed={55}
-                    glow={{ color: '#00cec9', intensity: 20, opacity: 0.5 }}
-                    hover={{ scale: 1.03, lift: -4, glow: true }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(0, 206, 201, 0.25)', color: '#81ecec' }}>
-                            Phase 4 Interaction
-                        </div>
-                        <h2>Hover + Glow Boost</h2>
-                        <p>
-                            Hover intensifies the glow effect. The wave brightens on mouse-over.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Glow Boost</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>glow: true</code> -- Brightens on hover</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Base Glow</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Cyan glow always visible</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4c. Scroll-Linked Animation ── */}
-                <WaveSection
+                {/* ── Scroll + Parallax ── */}
+                <DemoSection
+                    label="Scroll + Parallax"
                     background="#0984e3"
                     pattern="smooth"
                     animate="flow"
                     animationDuration={4}
                     scrollAnimate={true}
+                    layers={3}
+                    layerOpacity={0.3}
+                    height={200}
+                    parallax={{ speed: 0.5, direction: 'vertical' }}
+                    showAnimationControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 4 Scroll
+                            Interaction
                         </div>
-                        <h2>Scroll-Linked Animation</h2>
+                        <h2>Scroll + Parallax</h2>
                         <p>
-                            The flow animation is driven by your scroll position instead of time.
-                            Scroll up and down to scrub through the animation timeline.
+                            Scroll-linked animation driven by your scroll position.
+                            Multi-layer parallax creates depth as each layer moves at a different speed.
                         </p>
                         <div className="demo-grid">
                             <div className="demo-card">
@@ -590,126 +446,51 @@ export default function App() {
                                 <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>scrollAnimate={'{true}'}</code></p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>CSS Trick</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Paused animation + negative delay from scroll progress</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Any Animation</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Works with flow, pulse, morph, bounce, ripple</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4d. Scroll-Linked Reversed ── */}
-                <WaveSection
-                    background="#e17055"
-                    pattern="sharp"
-                    frequency={2}
-                    animate="bounce"
-                    animationDuration={3}
-                    scrollAnimate={{ progress: 'element', reverse: true }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 4 Scroll
-                        </div>
-                        <h2>Scroll-Linked (Reversed)</h2>
-                        <p>
-                            Bounce animation scrubbed in reverse as you scroll. The timeline plays backwards.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Reversed</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>reverse: true</code></p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Element Progress</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>progress: 'element'</code> -- Tracks this section</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4e. Parallax Layers ── */}
-                <WaveSection
-                    background="#6c5ce7"
-                    pattern="smooth"
-                    layers={3}
-                    layerOpacity={0.3}
-                    height={200}
-                    parallax={{ speed: 0.5, direction: 'vertical' }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 4 Scroll
-                        </div>
-                        <h2>Parallax Layers</h2>
-                        <p>
-                            Each wave layer moves at a different speed as you scroll,
-                            creating a depth / parallax effect. Scroll slowly to see the difference.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
                                 <h3 style={{ color: '#fff' }}>3 Layers</h3>
                                 <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>layers: 3</code> -- Each at different speed</p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Speed</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>speed: 0.5</code> -- Base parallax speed</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Depth</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Layer i: speed * (1 + i * 0.15)</p>
+                                <h3 style={{ color: '#fff' }}>Parallax</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>speed: 0.5</code> -- Vertical depth effect</p>
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ── 4f. Parallax (Horizontal) ── */}
-                <WaveSection
-                    background="#00b894"
-                    pattern="organic"
-                    seed={44}
-                    parallax={{ speed: 0.4, direction: 'horizontal' }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Phase 4 Scroll
-                        </div>
-                        <h2>Horizontal Parallax</h2>
-                        <p>
-                            Parallax along the horizontal axis. The wave shifts left/right as you scroll.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Horizontal</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>direction: 'horizontal'</code></p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Speed 0.4</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}><code>speed: 0.4</code></p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 4g. Intersection Callbacks ── */}
-                <WaveSection
+                {/* ── Hover + Callbacks ── */}
+                <DemoSection
+                    label="Hover + Callbacks"
                     background="#fdcb6e"
                     pattern="smooth"
+                    hover={{ scale: 1.04, lift: -6, glow: false, transition: 'transform 0.3s ease' }}
+                    shadow={true}
                     onEnter={handleEnter}
                     onExit={handleExit}
                     onProgress={handleProgress}
                 >
                     <div className="section-content">
                         <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
-                            Phase 4 Callbacks
+                            Interaction
                         </div>
-                        <h2>Intersection Callbacks</h2>
+                        <h2>Hover + Callbacks</h2>
                         <p>
-                            <code>onEnter</code>, <code>onExit</code>, and <code>onProgress</code> fire as you scroll.
+                            Hover over the wave to see it scale and lift. Intersection callbacks fire as you scroll.
                         </p>
+
+                        <div className="demo-grid">
+                            <div className="demo-card light">
+                                <h3>Scale + Lift</h3>
+                                <p><code>scale: 1.04, lift: -6</code></p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>onEnter / onExit</h3>
+                                <p>Fires when section enters/exits viewport</p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>onProgress</h3>
+                                <p>Continuous 0-1 progress as you scroll</p>
+                            </div>
+                        </div>
 
                         {/* Live progress bar */}
                         <div className="progress-demo">
@@ -739,229 +520,15 @@ export default function App() {
                             )}
                         </div>
                     </div>
-                </WaveSection>
-
-                {/* ── 4h. Everything Combined ── */}
-                <WaveSection
-                    background="#0c0c1d"
-                    pattern="organic"
-                    seed={99}
-                    height={180}
-                    animate="ripple"
-                    animationDuration={5}
-                    scrollAnimate={true}
-                    parallax={{ speed: 0.3 }}
-                    hover={{ scale: 1.03, lift: -3, glow: true }}
-                    glow={{ color: '#e84393', intensity: 20, opacity: 0.5 }}
-                    stroke={{ color: 'rgba(232, 67, 147, 0.4)', width: 1.5, fill: true }}
-                    texture={{ type: 'turbulence', frequency: 0.02, octaves: 3, scale: 3, seed: 11 }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(232, 67, 147, 0.3)', color: '#fd79a8' }}>
-                            Phase 3 + 4 Combined
-                        </div>
-                        <h2>Everything Together</h2>
-                        <p>
-                            All features composing: scroll-linked ripple animation, parallax, hover with glow boost,
-                            stroke, texture, and glow effects -- all on one section.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Scroll-Linked</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Ripple animation driven by scroll</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Parallax</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Depth via scroll offset</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Hover</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Scale + lift + glow boost</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>4 Effects</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>stroke + glow + texture + ripple</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
+                </DemoSection>
 
                 {/* ============================================================ */}
-                {/* PHASE 7.5: WAVE POLISH */}
+                {/* ADVANCED */}
                 {/* ============================================================ */}
 
-                {/* ── Phase 7.5 Banner ── */}
-                <WaveSection background="#1a1a2e" pattern="flowing" amplitude={0.8} height={160}>
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <span className="phase-tag phase-75" style={{ fontSize: '1rem' }}>Phase 7.5</span>
-                        <h1 style={{ marginTop: 12 }}>Wave Polish</h1>
-                        <p>
-                            New patterns, interlocking dual-wave edges, SVG path morphing animations,
-                            and procedural uniqueness via auto-seeding.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5a. Flowing Pattern ── */}
-                <WaveSection
-                    background="#ff7675"
-                    pattern="flowing"
-                    amplitude={0.7}
-                    height={140}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            New Pattern
-                        </div>
-                        <h2>Flowing</h2>
-                        <p>
-                            Dramatic S-curve with phase-adjustable inflection.
-                            A bold, sweeping wave for hero sections.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5b. Ribbon Pattern ── */}
-                <WaveSection
-                    background="#00b894"
-                    pattern="ribbon"
-                    seed={42}
-                    amplitude={0.6}
-                    height={140}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            New Pattern
-                        </div>
-                        <h2>Ribbon</h2>
-                        <p>
-                            Varying thickness ribbon shape with seed-controlled personality.
-                            Each seed produces a unique yet reproducible contour.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5c. Layered-Organic Pattern ── */}
-                <WaveSection
-                    background="#6c5ce7"
-                    pattern="layered-organic"
-                    seed={77}
-                    amplitude={0.5}
-                    height={160}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            New Pattern
-                        </div>
-                        <h2>Layered Organic</h2>
-                        <p>
-                            Dense organic contour with 5 cubic bezier segments.
-                            Creates rich, complex wave shapes.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5d. Drift Animation (Path Morphing) ── */}
-                <WaveSection
-                    background="#0984e3"
-                    pattern="smooth"
-                    animate="drift"
-                    height={140}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Path Morphing
-                        </div>
-                        <h2>Drift Animation</h2>
-                        <p>
-                            Horizontal phase glide via SVG <code>d: path()</code> CSS interpolation.
-                            The wave shape itself changes -- not just transforms.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Real 2D Motion</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Path keyframes with <code>d: path()</code></p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Zero JS per Frame</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Pre-generated CSS keyframes, GPU-composited</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5e. Breathe Animation ── */}
-                <WaveSection
-                    background="#e17055"
-                    pattern="organic"
-                    seed={33}
-                    animate="breathe"
-                    height={140}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Path Morphing
-                        </div>
-                        <h2>Breathe Animation</h2>
-                        <p>
-                            Amplitude grows and shrinks -- the wave inhales and exhales.
-                            Natural, organic breathing motion.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5f. Undulate Animation ── */}
-                <WaveSection
-                    background="#2d3436"
-                    pattern="flowing"
-                    animate="undulate"
-                    amplitude={0.7}
-                    height={160}
-                    glow={{ color: '#fd79a8', intensity: 15, opacity: 0.4 }}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(253, 121, 168, 0.3)', color: '#fd79a8' }}>
-                            Path Morphing
-                        </div>
-                        <h2>Undulate Animation</h2>
-                        <p>
-                            Combined phase + amplitude morphing for rich, premium wave motion.
-                            The most dramatic path morphing animation.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Phase + Amplitude</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Both vary simultaneously for complex motion</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>+ Glow</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Composes with SVG filter effects</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5g. Ripple-Out Animation ── */}
-                <WaveSection
-                    background="#00cec9"
-                    pattern="smooth"
-                    animate="ripple-out"
-                    height={140}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Path Morphing
-                        </div>
-                        <h2>Ripple-Out Animation</h2>
-                        <p>
-                            Center-outward disturbance that radiates from the middle.
-                            A pulsing ripple effect through the wave shape.
-                        </p>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5h. Dual-Wave Interlock ── */}
-                <WaveSection
+                {/* ── Dual-Wave Modes ── */}
+                <DemoSection
+                    label="Dual-Wave"
                     background="#0c0c1d"
                     pattern="smooth"
                     separation={{ mode: 'interlock', intensity: 0.6 }}
@@ -969,154 +536,217 @@ export default function App() {
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
                         <div className="badge" style={{ background: 'rgba(108, 92, 231, 0.3)', color: '#a29bfe' }}>
-                            Dual-Wave
+                            Advanced
                         </div>
-                        <h2>Interlock Mode</h2>
+                        <h2>Dual-Wave Modes</h2>
                         <p>
-                            Two independent SVG paths mesh together like zipper teeth.
-                            Each transition renders a unique interlocking edge.
+                            Two independent SVG paths mesh together. Switch between interlock, overlap, and apart modes
+                            by changing the <code>separation</code> prop.
                         </p>
                         <div className="demo-grid">
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Dual Paths</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Path A + Path B from shared base curve</p>
+                                <h3 style={{ color: '#fff' }}>Interlock</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Zipper teeth -- paths mesh together</p>
                             </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Auto-Seeded</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Procedurally unique per section position</p>
-                            </div>
-                            <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Intensity 0.6</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Controls how much the teeth interweave</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5i. Dual-Wave Overlap ── */}
-                <WaveSection
-                    background="#e84393"
-                    pattern="organic"
-                    seed={55}
-                    separation={{ mode: 'overlap', intensity: 0.7, strokeColor: 'rgba(255,255,255,0.3)', strokeWidth: 1.5 }}
-                    height={160}
-                >
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            Dual-Wave
-                        </div>
-                        <h2>Overlap Mode</h2>
-                        <p>
-                            Path A extends past Path B -- edges cross over each other.
-                            With a subtle stroke showing both contours.
-                        </p>
-                        <div className="demo-grid">
                             <div className="demo-card">
                                 <h3 style={{ color: '#fff' }}>Overlap</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Paths cross over, creating a layered look</p>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Paths cross over each other</p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Stroke</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Both edges outlined for visibility</p>
+                                <h3 style={{ color: '#fff' }}>Apart</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Loose separation with visible gap</p>
                             </div>
                         </div>
                     </div>
-                </WaveSection>
+                </DemoSection>
 
-                {/* ── 7.5j. Dual-Wave Apart ── */}
-                <WaveSection
-                    background="#fdcb6e"
-                    pattern="ribbon"
-                    seed={88}
-                    separation={{ mode: 'apart', intensity: 0.5, gap: 8 }}
-                    height={160}
-                >
-                    <div className="section-content">
-                        <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
-                            Dual-Wave
-                        </div>
-                        <h2>Apart Mode</h2>
-                        <p>
-                            Paths stay further separated -- a loose zipper effect with a visible gap.
-                            Uses the new ribbon pattern.
-                        </p>
-                        <div className="demo-grid">
-                            <div className="demo-card light">
-                                <h3>Gap</h3>
-                                <p><code>gap: 8</code> -- Spacing between paths</p>
-                            </div>
-                            <div className="demo-card light">
-                                <h3>Ribbon Pattern</h3>
-                                <p>Seed-controlled varying thickness</p>
-                            </div>
-                        </div>
-                    </div>
-                </WaveSection>
-
-                {/* ── 7.5k. Dual-Wave + Path Morphing Combined ── */}
-                <WaveSection
-                    background="#0c0c1d"
+                {/* ── Dual-Wave + Effects Combined ── */}
+                <DemoSection
+                    label="Dual-Wave + Effects"
+                    background="#e84393"
                     pattern="flowing"
                     separation={{ mode: 'interlock', intensity: 0.5, strokeColor: 'rgba(232, 67, 147, 0.4)', strokeWidth: 1 }}
                     animate="undulate"
                     height={180}
                     amplitude={0.7}
                     glow={{ color: '#e84393', intensity: 20, opacity: 0.5 }}
+                    showAnimationControls
                 >
                     <div className="section-content" style={{ color: '#ffffff' }}>
-                        <div className="badge" style={{ background: 'rgba(232, 67, 147, 0.3)', color: '#fd79a8' }}>
-                            Phase 7.5 Composition
+                        <div className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+                            Advanced
                         </div>
-                        <h2>Everything Together</h2>
+                        <h2>Dual-Wave + Effects</h2>
                         <p>
-                            Dual-wave interlock + undulate path morphing + glow + stroke.
-                            The wave edges interlock while both paths morph independently.
+                            Interlocking dual paths + undulate morphing + glow + stroke.
+                            Both paths animate independently via CSS <code>d: path()</code>.
+                        </p>
+                    </div>
+                </DemoSection>
+
+                {/* ── Gradients ── */}
+                <DemoSection
+                    label="Gradients"
+                    background="#1a1a2e"
+                    pattern="smooth"
+                    amplitude={0.6}
+                    autoGradient
+                >
+                    <div className="section-content" style={{ color: '#ffffff' }}>
+                        <div className="badge" style={{ background: 'rgba(108, 92, 231, 0.25)', color: '#a29bfe' }}>
+                            Advanced
+                        </div>
+                        <h2>Gradients</h2>
+                        <p>
+                            <code>autoGradient</code> blends from this section's color to the next.
+                            Also supports manual <code>fillGradient</code> and <code>containerGradient</code> with linear or radial stops.
                         </p>
                         <div className="demo-grid">
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Interlock + Morph</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Both Path A and B animate via CSS <code>d: path()</code></p>
+                                <h3 style={{ color: '#fff' }}>Auto-Gradient</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Automatic 3-stop gradient from neighbors</p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Flowing Pattern</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Dramatic S-curve base shape</p>
+                                <h3 style={{ color: '#fff' }}>Fill Gradient</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Custom gradient on the wave SVG fill</p>
                             </div>
                             <div className="demo-card">
-                                <h3 style={{ color: '#fff' }}>Glow + Stroke</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>SVG filter effects compose with dual paths</p>
+                                <h3 style={{ color: '#fff' }}>Container Gradient</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.7)' }}>Gradient on the section background</p>
+                            </div>
+                        </div>
+                    </div>
+                </DemoSection>
+
+                {/* ── Dual Gradient + Animation ── */}
+                <DemoSection
+                    label="Dual Gradient"
+                    background="#2d3436"
+                    pattern="flowing"
+                    amplitude={0.7}
+                    animate="drift"
+                    fillGradient={{
+                        type: 'linear',
+                        angle: 45,
+                        stops: [
+                            { color: '#e17055', offset: 0 },
+                            { color: '#fdcb6e', offset: 1 },
+                        ],
+                    }}
+                    containerGradient={{
+                        type: 'linear',
+                        angle: 135,
+                        stops: [
+                            { color: '#6c5ce7', offset: 0 },
+                            { color: '#0984e3', offset: 1 },
+                        ],
+                    }}
+                    glow
+                    showAnimationControls
+                >
+                    <div className="section-content" style={{ color: '#ffffff' }}>
+                        <div className="badge" style={{ background: 'rgba(108, 92, 231, 0.3)', color: '#a29bfe' }}>
+                            Advanced
+                        </div>
+                        <h2>Dual Gradient + Animation</h2>
+                        <p>
+                            Both <code>fillGradient</code> and <code>containerGradient</code> with drift animation and glow.
+                        </p>
+                    </div>
+                </DemoSection>
+
+                {/* ============================================================ */}
+                {/* UTILITIES */}
+                {/* ============================================================ */}
+
+                {/* ── CSS-Only + Responsive ── */}
+                <WaveSectionCSS
+                    background="#fdcb6e"
+                    pattern="smooth"
+                    height={100}
+                    amplitude={0.4}
+                    wavePosition="both"
+                >
+                    <div className="section-content">
+                        <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
+                            Utility
+                        </div>
+                        <h2>CSS-Only Mode</h2>
+                        <p>
+                            <code>&lt;WaveSectionCSS&gt;</code> uses CSS clip-path polygon instead of SVG.
+                            No animation, no context -- perfect for static pages and SSG.
+                        </p>
+                        <div className="demo-grid">
+                            <div className="demo-card light">
+                                <h3>Zero SVG</h3>
+                                <p>Pure CSS <code>clip-path: polygon()</code></p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>Tiny Footprint</h3>
+                                <p>No context, no IntersectionObserver overhead</p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>Both Edges</h3>
+                                <p><code>wavePosition="both"</code></p>
+                            </div>
+                        </div>
+                    </div>
+                </WaveSectionCSS>
+
+                {/* ── Responsive Heights ── */}
+                <WaveSection
+                    background="#ffeaa7"
+                    pattern="ribbon"
+                    seed={42}
+                    height={{ sm: 60, md: 120, lg: 200 }}
+                >
+                    <div className="section-content">
+                        <div className="badge" style={{ background: '#ffeaa7', color: '#d63031' }}>
+                            Utility
+                        </div>
+                        <h2>Responsive Heights</h2>
+                        <p>
+                            Wave height adapts to viewport: 60px on mobile, 120px on tablet, 200px on desktop.
+                        </p>
+                        <div className="demo-grid">
+                            <div className="demo-card light">
+                                <h3>sm (640px+)</h3>
+                                <p>60px wave height</p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>md (768px+)</h3>
+                                <p>120px wave height</p>
+                            </div>
+                            <div className="demo-card light">
+                                <h3>lg (1024px+)</h3>
+                                <p>200px wave height</p>
                             </div>
                         </div>
                     </div>
                 </WaveSection>
 
-                {/* ============================================================ */}
-                {/* PHASE 5: DEV TOOLS & EXPORT */}
-                {/* ============================================================ */}
-
-                {/* ── Phase 5 Banner ── */}
-                <WaveSection background="#2d3436" pattern="smooth">
-                    <div className="section-content" style={{ color: '#ffffff' }}>
-                        <span className="phase-tag phase-5" style={{ fontSize: '1rem' }}>Phase 5</span>
-                        <h1 style={{ marginTop: 12 }}>Dev Tools & Export</h1>
+                {/* ── DevTools ── */}
+                <WaveSection background="#f8f9fa" pattern="smooth">
+                    <div className="section-content">
+                        <div className="badge" style={{ background: '#e8e4ff', color: '#6c5ce7' }}>
+                            Utility
+                        </div>
+                        <h2>Dev Tools</h2>
                         <p>
-                            Enhanced debug panel, pattern gallery, SVG/PNG export,
-                            clip-path clipboard, and preset introspection.
+                            Debug panel, pattern gallery, SVG/PNG export, and preset introspection.
+                            Import from <code>wavy-bavy/devtools</code> -- zero bytes in production.
                         </p>
                     </div>
-                </WaveSection>
-
-                {/* ── 5a. DevTools Demo ── */}
-                <WaveSection background="#f8f9fa" pattern="smooth">
                     <DevToolsDemo />
                 </WaveSection>
 
                 {/* ============================================================ */}
-                {/* Footer -- Dark */}
+                {/* FOOTER */}
                 {/* ============================================================ */}
-                <WaveSection background="#191919" preset="footer" wavePosition="none">
+                <DemoSection label="Footer" role="footer" background="#191919" preset="footer" wavePosition="none">
                     <footer style={{ color: 'rgba(255,255,255,0.5)' }}>
                         <p>
-                            <strong style={{ color: '#fff' }}>wavy-bavy</strong> -- Phase 1-7.5 Playground Demo
+                            <strong style={{ color: '#fff' }}>wavy-bavy</strong> -- Playground
                             <br />
                             <a
                                 href="https://github.com/Modulo-click/wavy-bavy"
@@ -1127,7 +757,7 @@ export default function App() {
                             </a>
                         </p>
                     </footer>
-                </WaveSection>
+                </DemoSection>
             </WaveProvider>
         </>
     )
