@@ -81,10 +81,12 @@ export function WaveSectionCSS({
                 : { backgroundColor: background }
         )),
         clipPath,
-        // Add padding to account for the clip-path cutting into content
-        ...(wavePosition === 'bottom' && { paddingBottom: height }),
-        ...(wavePosition === 'top' && { paddingTop: height }),
-        ...(wavePosition === 'both' && { paddingTop: height, paddingBottom: height }),
+        // Padding prevents content from being clipped by the wave shape.
+        // Negative margins collapse the transparent (clipped) area so
+        // adjacent sections flow seamlessly behind the wave.
+        ...(wavePosition === 'bottom' && { paddingBottom: height, marginBottom: -height }),
+        ...(wavePosition === 'top' && { paddingTop: height, marginTop: -height }),
+        ...(wavePosition === 'both' && { paddingTop: height, paddingBottom: height, marginTop: -height, marginBottom: -height }),
         ...style,
     }
 

@@ -22,6 +22,10 @@ export { generateClipPath, generateDualClipPath } from './utils/clip-path'
 export { useIntersection, useMergedRef } from './utils/use-intersection'
 export type { UseIntersectionOptions } from './utils/use-intersection'
 export { optimizePath } from './utils/path-optimizer'
+export { useScrollProgress } from './utils/use-scroll-progress'
+export type { ScrollProgressOptions } from './utils/use-scroll-progress'
+export { useScrollVelocity } from './utils/use-scroll-velocity'
+export type { ScrollVelocityOptions } from './utils/use-scroll-velocity'
 
 // Constants & presets
 export {
@@ -35,6 +39,9 @@ export {
     DEFAULT_BLUR,
     DEFAULT_TEXTURE,
     DEFAULT_INNER_SHADOW,
+    DEFAULT_SCROLL_ANIMATION,
+    DEFAULT_PARALLAX,
+    DEFAULT_HOVER,
 } from './constants'
 
 // Tailwind plugin (re-exported for convenience; primary access via 'wavy-bavy/tailwind')
@@ -64,6 +71,11 @@ export type {
     BlurConfig,
     TextureConfig,
     InnerShadowConfig,
+
+    // Scroll & Interaction
+    ScrollAnimationConfig,
+    ParallaxConfig,
+    HoverConfig,
 
     // Layout
     WavePosition,

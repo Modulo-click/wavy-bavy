@@ -1,4 +1,4 @@
-import type { WaveDefaults, WavePreset, PatternGenerator, PatternConfig, StrokeConfig, BlurConfig, TextureConfig, InnerShadowConfig } from './types'
+import type { WaveDefaults, WavePreset, PatternGenerator, PatternConfig, StrokeConfig, BlurConfig, TextureConfig, InnerShadowConfig, ScrollAnimationConfig, ParallaxConfig, HoverConfig } from './types'
 
 // ============================================================
 // Default Configuration
@@ -229,4 +229,26 @@ export const DEFAULT_INNER_SHADOW: InnerShadowConfig = {
     blur: 8,
     offsetX: 0,
     offsetY: 2,
+}
+
+// ============================================================
+// Default Scroll & Interaction Configs
+// ============================================================
+
+export const DEFAULT_SCROLL_ANIMATION: ScrollAnimationConfig = {
+    progress: 'element',
+    damping: 0.1,
+    reverse: false,
+}
+
+export const DEFAULT_PARALLAX: ParallaxConfig = {
+    speed: 0.3,
+    direction: 'vertical',
+}
+
+export const DEFAULT_HOVER: HoverConfig = {
+    scale: 1.02,
+    lift: -4,
+    glow: false,
+    transition: 'transform 0.3s ease, filter 0.3s ease',
 }

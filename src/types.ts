@@ -162,6 +162,40 @@ export interface InnerShadowConfig {
 }
 
 // ============================================================
+// Scroll & Interaction Types
+// ============================================================
+
+/** Scroll-linked animation configuration */
+export interface ScrollAnimationConfig {
+    /** Progress source — 'element' uses element scroll progress, 'page' uses document scroll ratio. Default: 'element' */
+    progress?: 'element' | 'page'
+    /** Smoothing factor for scroll position (0-1). Default: 0.1 */
+    damping?: number
+    /** Reverse the animation direction. Default: false */
+    reverse?: boolean
+}
+
+/** Parallax layer configuration */
+export interface ParallaxConfig {
+    /** Parallax multiplier (0 = static, 1 = full scroll speed). Default: 0.3 */
+    speed?: number
+    /** Transform axis. Default: 'vertical' */
+    direction?: 'vertical' | 'horizontal'
+}
+
+/** Hover effect configuration */
+export interface HoverConfig {
+    /** Transform scale on hover. Default: 1.02 */
+    scale?: number
+    /** TranslateY on hover (px, negative = up). Default: -4 */
+    lift?: number
+    /** Enhance glow effect on hover. Default: false */
+    glow?: boolean
+    /** CSS transition string. Default: 'transform 0.3s ease, filter 0.3s ease' */
+    transition?: string
+}
+
+// ============================================================
 // Section Registration (Context)
 // ============================================================
 
@@ -291,6 +325,20 @@ export interface WaveSectionProps {
     /** Opacity for stacked layers. Default: 0.3 */
     layerOpacity?: number
 
+    // --- Scroll & Interaction ---
+    /** Scroll-linked animation: drive animation timeline from scroll position. Default: false */
+    scrollAnimate?: boolean | ScrollAnimationConfig
+    /** Parallax effect on wave layers. Default: false */
+    parallax?: boolean | ParallaxConfig
+    /** Hover effect on wave. Default: false */
+    hover?: boolean | HoverConfig
+    /** Callback fired when section enters viewport */
+    onEnter?: () => void
+    /** Callback fired when section leaves viewport */
+    onExit?: () => void
+    /** Callback fired on each scroll frame while section is visible */
+    onProgress?: (progress: number) => void
+
     // --- Performance ---
     /** Lazy render: only render SVG when visible. Default: false */
     lazy?: boolean
@@ -356,6 +404,10 @@ export interface WaveRendererProps {
     innerShadow?: InnerShadowConfig
     /** Whether to lazy-render (show placeholder until visible) */
     lazy?: boolean
+    /** Hover effect config */
+    hover?: HoverConfig
+    /** Parallax offset (px). Y applied via viewBox shift, X via CSS transform. */
+    parallaxOffset?: { x: number; y: number }
     /** Additional class */
     className?: string
 }

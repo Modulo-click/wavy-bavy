@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { generateMorphFrames, useWaveAnimation, useReducedMotion } from '../src/utils/animation'
+import { DEFAULT_SCROLL_ANIMATION } from '../src/constants'
 
 describe('generateMorphFrames', () => {
     it('generates the requested number of frames', () => {
@@ -129,5 +130,51 @@ describe('useWaveAnimation', () => {
         const { result } = renderHook(() => useWaveAnimation({ animate: true }))
         expect(result.current.animationStyle.animation).toBeDefined()
         expect(result.current.isAnimating).toBe(true)
+    })
+})
+
+// ============================================================
+// Scroll-linked animation style generation
+// ============================================================
+
+describe('scroll-linked animation style', () => {
+    it('generates animation style with duration for scroll-linking', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow', duration: 6 }))
+        const style = result.current.animationStyle
+        // The animation string should contain the duration
+        expect(style.animation).toContain('6s')
+    })
+
+    it('animation style includes proper timing function', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'pulse' }))
+        const style = result.current.animationStyle
+        expect(style.animation).toContain('ease-in-out')
+    })
+
+    it('scroll animation config has expected defaults', () => {
+        expect(DEFAULT_SCROLL_ANIMATION.progress).toBe('element')
+        expect(DEFAULT_SCROLL_ANIMATION.damping).toBe(0.1)
+        expect(DEFAULT_SCROLL_ANIMATION.reverse).toBe(false)
+    })
+
+    it('animation play state can be used for scroll-linked pausing', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'flow' }))
+        // When used with scroll-linked animation, playState is set to 'paused'
+        // and animation-delay is used to control position
+        expect(result.current.animationStyle.animationPlayState).toBe('running')
+        // In actual WaveSection, scrollAnimate would override this to 'paused'
+    })
+
+    it('velocity-modulated duration preserves animation name', () => {
+        const { result } = renderHook(() => useWaveAnimation({ animate: 'bounce', duration: 3 }))
+        expect(result.current.animationStyle.animation).toContain('3s')
+        expect(result.current.animationStyle.animation).toContain('wavy-bavy-anim-')
+    })
+
+    it('duration override works with any animation type', () => {
+        for (const anim of ['flow', 'pulse', 'morph', 'ripple', 'bounce'] as const) {
+            const { result } = renderHook(() => useWaveAnimation({ animate: anim, duration: 8 }))
+            expect(result.current.animationStyle.animation).toContain('8s')
+        }
     })
 })

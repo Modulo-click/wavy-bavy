@@ -66,11 +66,23 @@ export function WaveProvider({ defaults: userDefaults, debug = false, children }
         [],
     )
 
-    // Update a section's config
+    // Update a section's config (only triggers re-render if values actually changed)
     const update = useCallback((id: string, partial: Partial<SectionRegistration>) => {
-        setSections((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, ...partial } : s)),
-        )
+        setSections((prev) => {
+            let changed = false
+            const next = prev.map((s) => {
+                if (s.id !== id) return s
+                // Check if any value actually differs
+                for (const key of Object.keys(partial) as (keyof SectionRegistration)[]) {
+                    if (s[key] !== partial[key]) {
+                        changed = true
+                        return { ...s, ...partial }
+                    }
+                }
+                return s
+            })
+            return changed ? next : prev
+        })
     }, [])
 
     // Get the section immediately before a given ID

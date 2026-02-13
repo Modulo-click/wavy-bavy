@@ -6,6 +6,7 @@ import {
     useMemo,
     useRef,
     type CSSProperties,
+    type MutableRefObject,
 } from 'react'
 import type {
     WaveSectionProps,
@@ -16,6 +17,9 @@ import type {
     TextureConfig,
     InnerShadowConfig,
     PatternName,
+    ScrollAnimationConfig,
+    ParallaxConfig,
+    HoverConfig,
 } from '../types'
 import { useOptionalWaveContext } from '../context/useWaveContext'
 import { WaveRenderer } from './WaveRenderer'
@@ -30,11 +34,15 @@ import {
     DEFAULT_BLUR,
     DEFAULT_TEXTURE,
     DEFAULT_INNER_SHADOW,
+    DEFAULT_SCROLL_ANIMATION,
+    DEFAULT_PARALLAX,
+    DEFAULT_HOVER,
     PRESETS,
 } from '../constants'
 import { useWaveAnimation } from '../utils/animation'
 import { generateClipPath } from '../utils/clip-path'
-import { useIntersection } from '../utils/use-intersection'
+import { useIntersection, useMergedRef } from '../utils/use-intersection'
+import { useScrollProgress } from '../utils/use-scroll-progress'
 
 /**
  * WaveSection — the main public API component.
@@ -92,6 +100,14 @@ export function WaveSection({
     layers: layerCount = 1,
     layerOpacity = 0.3,
 
+    // Scroll & Interaction
+    scrollAnimate: scrollAnimateProp,
+    parallax: parallaxProp,
+    hover: hoverProp,
+    onEnter,
+    onExit,
+    onProgress,
+
     // Performance
     lazy = false,
 
@@ -113,6 +129,11 @@ export function WaveSection({
     const defaults = ctx?.defaults ?? DEFAULTS
     const registeredRef = useRef(false)
 
+    // Extract stable functions from context to avoid depending on the entire ctx object
+    // (ctx changes on every sections update because getSectionBefore/After are recreated)
+    const ctxRegister = ctx?.register
+    const ctxUpdate = ctx?.update
+
     // ── Resolve preset ──
     const resolvedPreset = preset ? PRESETS[preset] : undefined
 
@@ -122,13 +143,13 @@ export function WaveSection({
 
     // ── Register once on mount, update on prop changes ──
     useEffect(() => {
-        if (!ctx) return
+        if (!ctxRegister || !ctxUpdate) return
 
         const wavePos = wavePositionProp ?? 'bottom'
 
         if (!registeredRef.current) {
             // First mount — register
-            const cleanup = ctx.register(sectionId, {
+            const cleanup = ctxRegister(sectionId, {
                 id: sectionId,
                 background: parsedBg,
                 wavePosition: wavePos,
@@ -141,18 +162,18 @@ export function WaveSection({
             }
         } else {
             // Subsequent renders — just update
-            ctx.update(sectionId, {
+            ctxUpdate(sectionId, {
                 background: parsedBg,
                 wavePosition: wavePos,
             })
         }
-    }, [ctx, sectionId, parsedBg, wavePositionProp])
+    }, [ctxRegister, ctxUpdate, sectionId, parsedBg, wavePositionProp])
 
     // Update element ref after mount
     useEffect(() => {
-        if (!ctx || !sectionRef.current) return
-        ctx.update(sectionId, { element: sectionRef.current })
-    }, [ctx, sectionId])
+        if (!ctxUpdate || !sectionRef.current) return
+        ctxUpdate(sectionId, { element: sectionRef.current })
+    }, [ctxUpdate, sectionId])
 
     // ── Resolve wave config ──
     const pattern: PatternName = patternProp ?? resolvedPreset?.pattern ?? defaults.pattern
@@ -206,6 +227,34 @@ export function WaveSection({
                 ? undefined
                 : innerShadowProp
 
+    // ── Resolve scroll & interaction configs ──
+    const scrollAnimation: ScrollAnimationConfig | undefined =
+        scrollAnimateProp === true
+            ? DEFAULT_SCROLL_ANIMATION
+            : scrollAnimateProp === false || scrollAnimateProp === undefined
+                ? undefined
+                : scrollAnimateProp
+
+    const parallax: ParallaxConfig | undefined =
+        parallaxProp === true
+            ? DEFAULT_PARALLAX
+            : parallaxProp === false || parallaxProp === undefined
+                ? undefined
+                : parallaxProp
+
+    const hover: HoverConfig | undefined =
+        hoverProp === true
+            ? DEFAULT_HOVER
+            : hoverProp === false || hoverProp === undefined
+                ? undefined
+                : hoverProp
+
+    // ── Scroll progress (used for scroll-linked animation, parallax, onProgress) ──
+    const needsScrollProgress = !!scrollAnimation || !!parallax || !!onProgress
+    const [scrollRef, scrollProgress] = useScrollProgress({
+        disabled: !needsScrollProgress,
+    })
+
     // ── Animation (with optional throttling via intersection) ──
     const [throttleRef, isInView] = useIntersection({ once: false })
 
@@ -215,14 +264,65 @@ export function WaveSection({
         customKeyframes,
     })
 
-    // Animation throttling: pause when off-screen
+    // Animation throttling: pause when off-screen, or drive via scroll
     const throttledAnimationStyle: CSSProperties = useMemo(() => {
+        if (scrollAnimation && animationStyle.animation) {
+            // Scroll-linked animation: paused + negative delay mapped from scroll progress
+            const durationMatch = animationStyle.animation?.toString().match(/([\d.]+)s/)
+            const duration = durationMatch ? parseFloat(durationMatch[1]) : 4
+            const p = scrollAnimation.reverse ? 1 - scrollProgress : scrollProgress
+
+            return {
+                ...animationStyle,
+                animationPlayState: 'paused',
+                animationDelay: `-${p * duration}s`,
+            }
+        }
+
         if (!animationStyle.animation) return animationStyle
         return {
             ...animationStyle,
             animationPlayState: isInView ? animationStyle.animationPlayState : 'paused',
         }
-    }, [animationStyle, isInView])
+    }, [animationStyle, isInView, scrollAnimation, scrollProgress])
+
+    // ── Parallax offset for single-layer wave renderers ──
+    const parallaxOffset = useMemo(() => {
+        if (!parallax) return undefined
+        const speed = parallax.speed ?? 0.3
+        const offset = (scrollProgress - 0.5) * speed * 100
+        if (parallax.direction === 'horizontal') {
+            return { x: offset, y: 0 }
+        }
+        return { x: 0, y: offset }
+    }, [parallax, scrollProgress])
+
+    // ── Intersection callbacks (onEnter / onExit) ──
+    const [callbackRef, isCallbackVisible] = useIntersection({ once: false })
+    const prevVisibleRef = useRef(false)
+    const onEnterRef = useRef(onEnter)
+    const onExitRef = useRef(onExit)
+    const onProgressRef = useRef(onProgress)
+    onEnterRef.current = onEnter
+    onExitRef.current = onExit
+    onProgressRef.current = onProgress
+
+    useEffect(() => {
+        if (!onEnterRef.current && !onExitRef.current) return
+
+        if (isCallbackVisible && !prevVisibleRef.current) {
+            onEnterRef.current?.()
+        } else if (!isCallbackVisible && prevVisibleRef.current) {
+            onExitRef.current?.()
+        }
+        prevVisibleRef.current = isCallbackVisible
+    }, [isCallbackVisible])
+
+    // ── onProgress callback ──
+    useEffect(() => {
+        if (!onProgressRef.current || !needsScrollProgress) return
+        onProgressRef.current(scrollProgress)
+    }, [scrollProgress, needsScrollProgress])
 
     // ── Determine adjacent sections ──
     const prevSection = ctx?.getSectionBefore(sectionId) ?? null
@@ -287,8 +387,25 @@ export function WaveSection({
         ...style,
     }
 
+    // ── Stable merged ref (prevents infinite re-render from inline ref callbacks) ──
+    const mergedRef = useMergedRef<HTMLElement>(
+        sectionRef as MutableRefObject<HTMLElement | null>,
+        throttleRef,
+        scrollRef,
+        callbackRef,
+    )
+
     // Shared props for wave renderers
-    const sharedEffects = { stroke, blur, texture, innerShadow, lazy }
+    const sharedEffects = { stroke, blur, texture, innerShadow, lazy, hover }
+
+    // Parallax props for WaveLayer
+    const parallaxLayerProps = parallax
+        ? {
+              parallaxSpeed: parallax.speed ?? 0.3,
+              scrollProgress,
+              parallaxDirection: parallax.direction ?? ('vertical' as const),
+          }
+        : {}
 
     return (
         <>
@@ -302,6 +419,8 @@ export function WaveSection({
                         height={resolvedHeight}
                         direction="down"
                         baseOpacity={layerOpacity}
+                        hover={hover}
+                        {...parallaxLayerProps}
                     />
                 ) : (
                     <WaveRenderer
@@ -314,17 +433,14 @@ export function WaveSection({
                         glow={glow}
                         {...sharedEffects}
                         animationStyle={throttledAnimationStyle}
+                        parallaxOffset={parallaxOffset}
                     />
                 )
             )}
 
             {/* Section Content */}
             <Component
-                ref={(node: HTMLElement | null) => {
-                    // Merge refs: sectionRef + throttleRef for animation throttling
-                    ;(sectionRef as React.MutableRefObject<HTMLElement | null>).current = node
-                    throttleRef(node)
-                }}
+                ref={mergedRef}
                 className={`wavy-bavy-section ${className}`}
                 style={sectionStyle}
                 aria-label={ariaLabel}
@@ -342,6 +458,8 @@ export function WaveSection({
                         height={resolvedHeight}
                         direction="down"
                         baseOpacity={layerOpacity}
+                        hover={hover}
+                        {...parallaxLayerProps}
                     />
                 ) : (
                     <WaveRenderer
@@ -354,6 +472,7 @@ export function WaveSection({
                         glow={glow}
                         {...sharedEffects}
                         animationStyle={throttledAnimationStyle}
+                        parallaxOffset={parallaxOffset}
                     />
                 )
             )}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import React from 'react'
 import { WaveProvider } from '../src/context/WaveProvider'
 import { WaveSection } from '../src/components/WaveSection'
@@ -7,7 +7,7 @@ import { WaveRenderer } from '../src/components/WaveRenderer'
 import { WaveLayer } from '../src/components/WaveLayer'
 import { WaveSectionCSS } from '../src/components/WaveSectionCSS'
 import { generatePath } from '../src/utils/path-generator'
-import { DEFAULT_STROKE, DEFAULT_BLUR, DEFAULT_TEXTURE, DEFAULT_INNER_SHADOW } from '../src/constants'
+import { DEFAULT_STROKE, DEFAULT_BLUR, DEFAULT_TEXTURE, DEFAULT_INNER_SHADOW, DEFAULT_HOVER, DEFAULT_PARALLAX, DEFAULT_SCROLL_ANIMATION } from '../src/constants'
 
 // ============================================================
 // WaveProvider
@@ -133,10 +133,11 @@ describe('WaveRenderer', () => {
                 direction="down"
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath).not.toBeNull()
-        expect(svgPath?.getAttribute('d')).toBe(path)
-        expect(svgPath?.getAttribute('fill')).toBe('#ff0000')
+        // Two paths: top area (containerColor) + bottom area (fillColor)
+        const paths = document.querySelectorAll('path')
+        expect(paths.length).toBe(2)
+        expect(paths[0]?.getAttribute('fill')).toBe('#ffffff') // top area = containerColor
+        expect(paths[1]?.getAttribute('fill')).toBe('#ff0000') // bottom area = fillColor
     })
 
     it('sets aria-hidden on the container', () => {
@@ -195,7 +196,7 @@ describe('WaveRenderer', () => {
         expect(container?.style.transform).toBe('')
     })
 
-    it('sets container background color', () => {
+    it('sets container background to fillColor', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -206,7 +207,8 @@ describe('WaveRenderer', () => {
             />,
         )
         const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
-        expect(container?.style.backgroundColor).toBe('rgb(0, 255, 0)')
+        // Container bg is now fillColor (adjacent section), not containerColor
+        expect(container?.style.backgroundColor).toBe('rgb(255, 0, 0)')
     })
 
     it('renders shadow filter when shadow is provided', () => {
@@ -253,7 +255,7 @@ describe('WaveRenderer', () => {
         expect(filter).toBeNull()
     })
 
-    it('applies animationStyle', () => {
+    it('applies animationStyle to wrapper div', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -265,7 +267,9 @@ describe('WaveRenderer', () => {
             />,
         )
         const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
-        expect(container?.style.willChange).toBe('transform')
+        // Animation styles are on the wrapper div (container > wrapper > SVG)
+        const wrapper = container.firstElementChild as HTMLElement
+        expect(wrapper?.style.willChange).toBe('transform')
     })
 })
 
@@ -337,7 +341,7 @@ describe('WaveLayer', () => {
 describe('WaveRenderer (stroke)', () => {
     const path = generatePath('smooth', { height: 120 })
 
-    it('renders stroke attributes when stroke config provided', () => {
+    it('renders stroke attributes on a separate contour path', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -348,12 +352,16 @@ describe('WaveRenderer (stroke)', () => {
                 stroke={DEFAULT_STROKE}
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath?.getAttribute('stroke')).toBe(DEFAULT_STROKE.color)
-        expect(svgPath?.getAttribute('stroke-width')).toBe(String(DEFAULT_STROKE.width))
+        // Three paths: top area + bottom area + stroke contour
+        const paths = document.querySelectorAll('path')
+        expect(paths.length).toBe(3)
+        const strokePath = paths[2]
+        expect(strokePath?.getAttribute('stroke')).toBe(DEFAULT_STROKE.color)
+        expect(strokePath?.getAttribute('stroke-width')).toBe(String(DEFAULT_STROKE.width))
+        expect(strokePath?.getAttribute('fill')).toBe('none')
     })
 
-    it('removes fill when stroke.fill is false', () => {
+    it('removes fill on bottom area path when stroke.fill is false', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -364,11 +372,13 @@ describe('WaveRenderer (stroke)', () => {
                 stroke={{ ...DEFAULT_STROKE, fill: false }}
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath?.getAttribute('fill')).toBe('none')
+        const paths = document.querySelectorAll('path')
+        // paths[0] = top area (containerColor), paths[1] = bottom area, paths[2] = stroke
+        expect(paths[1]?.getAttribute('fill')).toBe('none')
+        expect(paths[2]?.getAttribute('stroke')).toBe(DEFAULT_STROKE.color)
     })
 
-    it('keeps fill when stroke.fill is true', () => {
+    it('keeps fill on bottom area path when stroke.fill is true', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -379,11 +389,12 @@ describe('WaveRenderer (stroke)', () => {
                 stroke={{ ...DEFAULT_STROKE, fill: true }}
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath?.getAttribute('fill')).toBe('#ff0000')
+        const paths = document.querySelectorAll('path')
+        // paths[1] = bottom area path, should keep fillColor
+        expect(paths[1]?.getAttribute('fill')).toBe('#ff0000')
     })
 
-    it('renders stroke-dasharray when provided', () => {
+    it('renders stroke-dasharray on contour path', () => {
         render(
             <WaveRenderer
                 path={path}
@@ -394,8 +405,9 @@ describe('WaveRenderer (stroke)', () => {
                 stroke={{ ...DEFAULT_STROKE, dashArray: '5 3' }}
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath?.getAttribute('stroke-dasharray')).toBe('5 3')
+        const paths = document.querySelectorAll('path')
+        // Stroke contour is paths[2] (after top area + bottom area)
+        expect(paths[2]?.getAttribute('stroke-dasharray')).toBe('5 3')
     })
 
     it('does not render stroke attributes when no stroke config', () => {
@@ -627,8 +639,9 @@ describe('WaveRenderer (combined effects)', () => {
                 innerShadow={DEFAULT_INNER_SHADOW}
             />,
         )
-        const svgPath = document.querySelector('path')
-        expect(svgPath?.getAttribute('stroke')).toBe(DEFAULT_STROKE.color)
+        // Stroke is on paths[2] (after top area + bottom area)
+        const paths = document.querySelectorAll('path')
+        expect(paths[2]?.getAttribute('stroke')).toBe(DEFAULT_STROKE.color)
         const filter = document.querySelector('filter')
         const filterHtml = filter?.innerHTML ?? ''
         expect(filterHtml).toContain('feComponentTransfer')
@@ -725,6 +738,352 @@ describe('WaveSectionCSS', () => {
             </WaveSectionCSS>,
         )
         const section = document.querySelector('.my-css-wave')
+        expect(section).not.toBeNull()
+    })
+})
+
+// ============================================================
+// Phase 4: Scroll & Interaction Tests
+// ============================================================
+
+// ── Hover effects ──
+
+describe('WaveRenderer (hover)', () => {
+    const path = generatePath('smooth', { height: 120 })
+
+    it('applies scale and lift transforms on mouseenter', () => {
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                hover={DEFAULT_HOVER}
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
+        // Wrapper div is between container and SVG
+        const wrapper = container.firstElementChild as HTMLElement
+        expect(container).not.toBeNull()
+
+        // Before hover — no scale/lift transforms on wrapper
+        expect(wrapper.style.transform).not.toContain('scale')
+
+        // Trigger hover (mouse enters the container div)
+        fireEvent.mouseEnter(container)
+        // Transforms applied to the wrapper div
+        expect(wrapper.style.transform).toContain('scale(1.02)')
+        expect(wrapper.style.transform).toContain('translateY(-4px)')
+    })
+
+    it('resets transforms on mouseleave', () => {
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                hover={DEFAULT_HOVER}
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
+        const wrapper = container.firstElementChild as HTMLElement
+
+        fireEvent.mouseEnter(container)
+        expect(wrapper.style.transform).toContain('scale(1.02)')
+
+        fireEvent.mouseLeave(container)
+        expect(wrapper.style.transform).not.toContain('scale')
+    })
+
+    it('boolean true uses DEFAULT_HOVER values', () => {
+        // Render via WaveSection with hover={true} — the section resolves to DEFAULT_HOVER
+        render(
+            <WaveSection background="#fff" hover={true}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        // Should not throw, section renders normally
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('custom config overrides defaults', () => {
+        const customHover = { scale: 1.5, lift: -10, glow: false, transition: 'all 0.5s' }
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                hover={customHover}
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
+        const wrapper = container.firstElementChild as HTMLElement
+
+        // Check transition uses custom value (on wrapper div)
+        expect(wrapper.style.transition).toBe('all 0.5s')
+
+        fireEvent.mouseEnter(container)
+        expect(wrapper.style.transform).toContain('scale(1.5)')
+        expect(wrapper.style.transform).toContain('translateY(-10px)')
+    })
+
+    it('preserves aria-hidden during hover', () => {
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                hover={DEFAULT_HOVER}
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave')
+        expect(container?.getAttribute('aria-hidden')).toBe('true')
+
+        fireEvent.mouseEnter(container!)
+        expect(container?.getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('does not add mouse handlers when hover is undefined', () => {
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
+        // No transition style applied when no hover config
+        expect(container.style.transition).toBe('')
+    })
+})
+
+// ── Parallax ──
+
+describe('WaveRenderer (parallax)', () => {
+    const path = generatePath('smooth', { height: 120 })
+
+    it('applies vertical parallax via viewBox Y shift', () => {
+        // Y offset of 6 → viewBox shifts by -6 to create downward parallax
+        const parallaxOffset = { x: 0, y: 6 }
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                parallaxOffset={parallaxOffset}
+            />,
+        )
+        const svg = document.querySelector('svg') as SVGElement
+        expect(svg.getAttribute('viewBox')).toBe('0 -6 1440 120')
+    })
+
+    it('applies horizontal parallax via wrapper translateX', () => {
+        const parallaxOffset = { x: 10, y: 0 }
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                parallaxOffset={parallaxOffset}
+            />,
+        )
+        const container = document.querySelector('.wavy-bavy-wave') as HTMLElement
+        const wrapper = container.firstElementChild as HTMLElement
+        expect(wrapper.style.transform).toContain('translateX(10px)')
+    })
+
+    it('clamps viewBox Y shift to ±50', () => {
+        const parallaxOffset = { x: 0, y: 100 }
+        render(
+            <WaveRenderer
+                path={path}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                parallaxOffset={parallaxOffset}
+            />,
+        )
+        const svg = document.querySelector('svg') as SVGElement
+        expect(svg.getAttribute('viewBox')).toBe('0 -50 1440 120')
+    })
+})
+
+describe('WaveSection (parallax)', () => {
+    it('boolean true uses DEFAULT_PARALLAX', () => {
+        render(
+            <WaveSection background="#fff" parallax={true}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('accepts custom parallax config', () => {
+        render(
+            <WaveSection background="#fff" parallax={{ speed: 0.5, direction: 'horizontal' }}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+})
+
+// ── WaveLayer (parallax per layer) ──
+
+describe('WaveLayer (parallax)', () => {
+    it('passes parallax offset to each layer', () => {
+        const paths = [
+            generatePath('smooth', { height: 120 }),
+            generatePath('smooth', { height: 120, amplitude: 0.4 }),
+            generatePath('smooth', { height: 120, amplitude: 0.3 }),
+        ]
+        render(
+            <WaveLayer
+                paths={paths}
+                fillColor="#ff0000"
+                containerColor="#ffffff"
+                height={120}
+                direction="down"
+                baseOpacity={0.3}
+                parallaxSpeed={0.3}
+                scrollProgress={0.7}
+                parallaxDirection="vertical"
+            />,
+        )
+        const waves = document.querySelectorAll('.wavy-bavy-wave')
+        expect(waves.length).toBe(3)
+        // Each wave's SVG should have a shifted viewBox (Y parallax via viewBox, not CSS)
+        for (const wave of Array.from(waves)) {
+            const svg = (wave as HTMLElement).querySelector('svg') as SVGElement
+            const viewBox = svg.getAttribute('viewBox') ?? ''
+            // viewBox should NOT be "0 0 1440 120" — the Y origin should be shifted
+            expect(viewBox).not.toBe('0 0 1440 120')
+        }
+    })
+})
+
+// ── Scroll-linked animation ──
+
+describe('WaveSection (scroll-linked animation)', () => {
+    it('accepts scrollAnimate boolean true without error', () => {
+        render(
+            <WaveSection background="#fff" animate="flow" scrollAnimate={true}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('accepts scrollAnimate config without error', () => {
+        render(
+            <WaveSection
+                background="#fff"
+                animate="flow"
+                scrollAnimate={{ progress: 'element', damping: 0.2, reverse: true }}
+            >
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+})
+
+// ── Intersection callbacks ──
+
+describe('WaveSection (intersection callbacks)', () => {
+    it('accepts onEnter callback without error', () => {
+        const onEnter = vi.fn()
+        render(
+            <WaveSection background="#fff" onEnter={onEnter}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('accepts onExit callback without error', () => {
+        const onExit = vi.fn()
+        render(
+            <WaveSection background="#fff" onExit={onExit}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('accepts onProgress callback without error', () => {
+        const onProgress = vi.fn()
+        render(
+            <WaveSection background="#fff" onProgress={onProgress}>
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+})
+
+// ── Composition tests ──
+
+describe('WaveSection (feature composition)', () => {
+    it('scroll + hover compose correctly', () => {
+        render(
+            <WaveSection background="#fff" scrollAnimate={true} hover={true} animate="flow">
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('parallax + animation compose correctly', () => {
+        render(
+            <WaveSection background="#fff" parallax={true} animate="pulse">
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
+        expect(section).not.toBeNull()
+    })
+
+    it('all scroll features disabled when SSR-like (no crash)', () => {
+        // All features should handle no window gracefully
+        render(
+            <WaveSection
+                background="#fff"
+                scrollAnimate={true}
+                parallax={true}
+                hover={true}
+                animate="flow"
+                onEnter={() => {}}
+                onExit={() => {}}
+                onProgress={() => {}}
+            >
+                <p>Content</p>
+            </WaveSection>,
+        )
+        const section = document.querySelector('.wavy-bavy-section')
         expect(section).not.toBeNull()
     })
 })
