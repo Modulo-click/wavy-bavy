@@ -5,6 +5,10 @@
     - [x] Create `package.json` (name: wavy-bavy, org: @modulo-click)
     - [x] Create `tsconfig.json`
     - [x] Create `tsup.config.ts` (ESM + CJS build)
+    - [x] Integrate `wavy-bavy` into `sinthu-consulting`
+    - [x] Install library
+    - [x] Replace `WaveDivider` usage
+    - [x] Wrap with `WaveProvider`
     - [x] Install dependencies
 - [x] Core Types & Constants
     - [x] Create `src/types.ts` (all interfaces)

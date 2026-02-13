@@ -37,7 +37,10 @@ WaveContext.displayName = 'WaveContext'
  * ```
  */
 export function WaveProvider({ defaults: userDefaults, debug: debugProp = false, children }: WaveProviderProps) {
-    const [sections, setSections] = useState<SectionRegistration[]>([])
+    // Store sections in a ref to avoid re-renders on every registration
+    // This breaks the infinite loop cycle
+    const sectionsRef = useRef<SectionRegistration[]>([])
+    const [version, setVersion] = useState(0) // Used to trigger updates
     const orderCounter = useRef(0)
 
     // Resolve debug config
@@ -74,91 +77,89 @@ export function WaveProvider({ defaults: userDefaults, debug: debugProp = false,
         [userDefaults],
     )
 
+    // Helper to force update
+    const bumpVersion = useCallback(() => setVersion((v) => v + 1), [])
+
     // Register a section — returns unregister cleanup
     const register = useCallback(
         (id: string, config: Omit<SectionRegistration, 'order'>) => {
             const order = orderCounter.current++
 
-            setSections((prev) => {
-                // Avoid duplicates
-                if (prev.some((s) => s.id === id)) return prev
-                const next = [...prev, { ...config, order }]
-                // Sort by order to maintain insertion sequence
-                next.sort((a, b) => a.order - b.order)
-                return next
-            })
+            // Check if already registered to avoid unnecessary work
+            const existing = sectionsRef.current.find(s => s.id === id)
+            if (existing) return () => { }
+
+            const newSection = { ...config, order }
+            sectionsRef.current = [...sectionsRef.current, newSection].sort((a, b) => a.order - b.order)
+
+            // Trigger update so other components know about the new section
+            bumpVersion()
 
             // Cleanup
             return () => {
-                setSections((prev) => prev.filter((s) => s.id !== id))
+                sectionsRef.current = sectionsRef.current.filter((s) => s.id !== id)
+                bumpVersion()
             }
         },
-        [],
+        [bumpVersion],
     )
 
-    // Update a section's config (only triggers re-render if values actually changed)
+    // Update a section's config
     const update = useCallback((id: string, partial: Partial<SectionRegistration>) => {
-        setSections((prev) => {
-            let changed = false
-            const next = prev.map((s) => {
-                if (s.id !== id) return s
-                // Check if any value actually differs (deep compare for plain objects)
-                for (const key of Object.keys(partial) as (keyof SectionRegistration)[]) {
-                    const oldVal = s[key]
-                    const newVal = partial[key]
-                    // Skip DOM element comparison (circular refs) — use reference equality
-                    if (key === 'element') {
-                        if (oldVal !== newVal) {
-                            changed = true
-                            return { ...s, ...partial }
-                        }
-                    } else if (typeof oldVal === 'object' && oldVal !== null && typeof newVal === 'object' && newVal !== null) {
-                        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                            changed = true
-                            return { ...s, ...partial }
-                        }
-                    } else if (oldVal !== newVal) {
-                        changed = true
-                        return { ...s, ...partial }
-                    }
-                }
-                return s
-            })
-            return changed ? next : prev
-        })
-    }, [])
+        const index = sectionsRef.current.findIndex((s) => s.id === id)
+        if (index === -1) return
 
-    // Ref-based lookups — avoids recreating callbacks on every sections change,
-    // preventing unnecessary context-triggered re-renders of all consumers.
-    const sectionsRef = useRef(sections)
-    sectionsRef.current = sections
+        const current = sectionsRef.current[index]
+        // Shallow comparison to avoid unnecessary updates
+        const hasChanges = Object.entries(partial).some(([key, val]) => current[key as keyof SectionRegistration] !== val)
 
+        if (!hasChanges) return
+
+        const updated = { ...current, ...partial }
+        const newSections = [...sectionsRef.current]
+        newSections[index] = updated
+        sectionsRef.current = newSections
+
+        // Only trigger re-render if visual properties changed that might affect neighbors
+        if (partial.background || partial.wavePosition) {
+            bumpVersion()
+        }
+    }, [bumpVersion])
+
+    // Get the section immediately before a given ID
     const getSectionBefore = useCallback(
         (id: string): SectionRegistration | null => {
-            const s = sectionsRef.current
-            const idx = s.findIndex((sec) => sec.id === id)
-            return idx > 0 ? s[idx - 1] : null
+            const idx = sectionsRef.current.findIndex((s) => s.id === id)
+            return idx > 0 ? sectionsRef.current[idx - 1] : null
         },
-        [],
+        [], // Stable! No dependencies on state
     )
 
+    // Get the section immediately after a given ID
     const getSectionAfter = useCallback(
         (id: string): SectionRegistration | null => {
-            const s = sectionsRef.current
-            const idx = s.findIndex((sec) => sec.id === id)
-            return idx >= 0 && idx < s.length - 1 ? s[idx + 1] : null
+            const idx = sectionsRef.current.findIndex((s) => s.id === id)
+            return idx >= 0 && idx < sectionsRef.current.length - 1 ? sectionsRef.current[idx + 1] : null
         },
-        [],
+        [], // Stable! No dependencies on state
     )
 
     const value = useMemo<WaveContextValue>(
-        () => ({ sections, register, update, getSectionBefore, getSectionAfter, defaults, debug: debugEnabled }),
-        [sections, register, update, getSectionBefore, getSectionAfter, defaults, debugEnabled],
+        () => ({
+            sections: sectionsRef.current,
+            register,
+            update,
+            getSectionBefore,
+            getSectionAfter,
+            defaults,
+            debug: debugEnabled
+        }),
+        [version, register, update, getSectionBefore, getSectionAfter, defaults, debugEnabled],
     )
 
     return (
         <WaveContext.Provider value={value}>
-            {debugEnabled && <WaveDebugOverlay sections={sections} />}
+            {debugEnabled && <WaveDebugOverlay sections={sectionsRef.current} />}
             {children}
         </WaveContext.Provider>
     )

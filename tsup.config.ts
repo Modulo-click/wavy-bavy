@@ -18,6 +18,11 @@ export default defineConfig([
         splitting: false,
         minify: false,
         target: 'es2020',
+        esbuildOptions(options) {
+            options.banner = {
+                js: '"use client";',
+            }
+        },
     },
     {
         entry: { 'web-component': 'src/web-component.ts' },
