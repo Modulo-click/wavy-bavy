@@ -20,6 +20,7 @@ import type {
     ScrollAnimationConfig,
     ParallaxConfig,
     HoverConfig,
+    WaveSeparationConfig,
 } from '../types'
 import { useOptionalWaveContext } from '../context/useWaveContext'
 import { WaveRenderer } from './WaveRenderer'
@@ -37,12 +38,15 @@ import {
     DEFAULT_SCROLL_ANIMATION,
     DEFAULT_PARALLAX,
     DEFAULT_HOVER,
+    DEFAULT_SEPARATION,
     PRESETS,
 } from '../constants'
 import { useWaveAnimation } from '../utils/animation'
 import { generateClipPath } from '../utils/clip-path'
 import { useIntersection, useMergedRef } from '../utils/use-intersection'
 import { useScrollProgress } from '../utils/use-scroll-progress'
+import { generateInterlockPaths, autoSeed } from '../utils/interlock-generator'
+import { PATH_MORPH_GENERATORS } from '../utils/keyframes'
 
 /**
  * WaveSection — the main public API component.
@@ -104,6 +108,7 @@ export function WaveSection({
     scrollAnimate: scrollAnimateProp,
     parallax: parallaxProp,
     hover: hoverProp,
+    separation: separationProp,
     onEnter,
     onExit,
     onProgress,
@@ -262,6 +267,14 @@ export function WaveSection({
                 ? undefined
                 : hoverProp
 
+    // ── Separation config ──
+    const separation: WaveSeparationConfig | undefined =
+        separationProp === true
+            ? DEFAULT_SEPARATION
+            : separationProp === false || separationProp === undefined
+                ? undefined
+                : { ...DEFAULT_SEPARATION, ...separationProp }
+
     // ── Scroll progress (used for scroll-linked animation, parallax, onProgress) ──
     const needsScrollProgress = !!scrollAnimation || !!parallax || !!onProgress
     const [scrollRef, scrollProgress] = useScrollProgress({
@@ -370,6 +383,69 @@ export function WaveSection({
         return [generatePath(pattern === 'custom' && customPath ? 'smooth' : pattern, patternConfig)]
     }, [showBottomWave, pattern, layerCount, amplitude, frequency, phase, mirror, seed, resolvedHeight])
 
+    // ── Dual-path interlocking (when separation is configured) ──
+    const sectionOrder = ctx?.sections.findIndex(s => s.id === sectionId) ?? 0
+
+    const bottomDualPaths = useMemo(() => {
+        if (!separation || !showBottomWave || separation.mode === 'flush') return undefined
+        return generateInterlockPaths({
+            pattern,
+            height: resolvedHeight,
+            amplitude,
+            frequency,
+            intensity: separation.intensity,
+            mode: separation.mode,
+            seed: seed ?? autoSeed(sectionOrder, 0),
+            gap: separation.gap,
+            phase: phase ?? 0,
+            mirror: mirror ?? false,
+        })
+    }, [separation, showBottomWave, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
+
+    const topDualPaths = useMemo(() => {
+        if (!separation || !showTopWave || separation.mode === 'flush') return undefined
+        return generateInterlockPaths({
+            pattern,
+            height: resolvedHeight,
+            amplitude,
+            frequency,
+            intensity: separation.intensity,
+            mode: separation.mode,
+            seed: seed ?? autoSeed(sectionOrder, 1),
+            gap: separation.gap,
+            phase: phase ?? 0,
+            mirror: mirror ?? false,
+        })
+    }, [separation, showTopWave, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
+
+    // ── Path morphing keyframes for new animation types ──
+    const animateName = animate ?? resolvedPreset?.animate ?? defaults.animate
+    const isPathMorphAnim = typeof animateName === 'string' && animateName in PATH_MORPH_GENERATORS
+
+    const bottomMorphKeyframes = useMemo(() => {
+        if (!isPathMorphAnim || !showBottomWave) return undefined
+        const gen = PATH_MORPH_GENERATORS[animateName as string]
+        if (!gen) return undefined
+        const basePath = bottomDualPaths?.pathA ?? bottomWavePaths[0] ?? ''
+        const animIdA = `wavy-morph-a-${sectionOrder}-bottom`
+        const animIdB = `wavy-morph-b-${sectionOrder}-bottom`
+        const cssA = gen(animIdA, basePath, pattern, { height: resolvedHeight, amplitude, frequency })
+        const cssB = bottomDualPaths ? gen(animIdB, bottomDualPaths.pathB, pattern, { height: resolvedHeight, amplitude, frequency }) : undefined
+        return { cssA, cssB, animIdA, animIdB }
+    }, [isPathMorphAnim, showBottomWave, animateName, bottomDualPaths, bottomWavePaths, pattern, resolvedHeight, amplitude, frequency, sectionOrder])
+
+    const topMorphKeyframes = useMemo(() => {
+        if (!isPathMorphAnim || !showTopWave) return undefined
+        const gen = PATH_MORPH_GENERATORS[animateName as string]
+        if (!gen) return undefined
+        const basePath = topDualPaths?.pathA ?? topWavePaths[0] ?? ''
+        const animIdA = `wavy-morph-a-${sectionOrder}-top`
+        const animIdB = `wavy-morph-b-${sectionOrder}-top`
+        const cssA = gen(animIdA, basePath, pattern, { height: resolvedHeight, amplitude, frequency })
+        const cssB = topDualPaths ? gen(animIdB, topDualPaths.pathB, pattern, { height: resolvedHeight, amplitude, frequency }) : undefined
+        return { cssA, cssB, animIdA, animIdB }
+    }, [isPathMorphAnim, showTopWave, animateName, topDualPaths, topWavePaths, pattern, resolvedHeight, amplitude, frequency, sectionOrder])
+
     // ── Wave colors ──
     // Top wave: transitions from PREVIOUS section color to THIS section color
     const topWaveFillColor = parsedBg.dominantColor // This section's color fills the wave
@@ -437,7 +513,7 @@ export function WaveSection({
                     />
                 ) : (
                     <WaveRenderer
-                        path={topWavePaths[0] || ''}
+                        path={topDualPaths?.pathA ?? topWavePaths[0] ?? ''}
                         fillColor={topWaveFillColor}
                         containerColor={topWaveContainerColor}
                         height={resolvedHeight}
@@ -445,8 +521,14 @@ export function WaveSection({
                         shadow={shadow}
                         glow={glow}
                         {...sharedEffects}
-                        animationStyle={throttledAnimationStyle}
+                        animationStyle={isPathMorphAnim ? undefined : throttledAnimationStyle}
                         parallaxOffset={parallaxOffset}
+                        pathB={topDualPaths?.pathB}
+                        separation={separation}
+                        pathAKeyframesCSS={topMorphKeyframes?.cssA}
+                        pathBKeyframesCSS={topMorphKeyframes?.cssB}
+                        pathAAnimId={topMorphKeyframes?.animIdA}
+                        pathBAnimId={topMorphKeyframes?.animIdB}
                     />
                 )
             )}
@@ -476,7 +558,7 @@ export function WaveSection({
                     />
                 ) : (
                     <WaveRenderer
-                        path={bottomWavePaths[0] || ''}
+                        path={bottomDualPaths?.pathA ?? bottomWavePaths[0] ?? ''}
                         fillColor={bottomWaveFillColor}
                         containerColor={bottomWaveContainerColor}
                         height={resolvedHeight}
@@ -484,8 +566,14 @@ export function WaveSection({
                         shadow={shadow}
                         glow={glow}
                         {...sharedEffects}
-                        animationStyle={throttledAnimationStyle}
+                        animationStyle={isPathMorphAnim ? undefined : throttledAnimationStyle}
                         parallaxOffset={parallaxOffset}
+                        pathB={bottomDualPaths?.pathB}
+                        separation={separation}
+                        pathAKeyframesCSS={bottomMorphKeyframes?.cssA}
+                        pathBKeyframesCSS={bottomMorphKeyframes?.cssB}
+                        pathAAnimId={bottomMorphKeyframes?.animIdA}
+                        pathBAnimId={bottomMorphKeyframes?.animIdB}
                     />
                 )
             )}

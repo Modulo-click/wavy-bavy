@@ -2,6 +2,7 @@
 
 Seamless, automatic wave transitions between page sections. Context-aware, responsive, and customizable.
 
+[![CI](https://github.com/Modulo-click/wavy-bavy/actions/workflows/ci.yml/badge.svg)](https://github.com/Modulo-click/wavy-bavy/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/wavy-bavy.svg)](https://www.npmjs.com/package/wavy-bavy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 

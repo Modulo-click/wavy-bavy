@@ -89,6 +89,16 @@ body {
     color: #004085;
 }
 
+.phase-5 {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.phase-75 {
+    background: #f8d7da;
+    color: #721c24;
+}
+
 /* ===== Demo Cards ===== */
 
 .demo-grid {

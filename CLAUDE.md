@@ -41,10 +41,14 @@ src/
   context/
     WaveProvider.tsx           # Context provider (section registry + debug overlay)
     useWaveContext.ts          # Hooks (useWaveContext + useOptionalWaveContext)
+  web-component.ts               # <wavy-section> custom element (vanilla JS / Astro)
   utils/
     path-generator.ts          # SVG path math (generatePath, flipPathVertically)
     color-utils.ts             # Color parsing, hex/rgb conversion, interpolation
     animation.ts               # Animation system (flow, pulse, morph, ripple, bounce, custom)
+    keyframes.ts               # Pure CSS keyframe generators + path morphing (no React dependency)
+    interlock-generator.ts     # Dual-path interlock generation (autoSeed, generateInterlockPaths)
+    scroll-tracker.ts          # Velocity-adaptive scroll tracker (vanilla JS, no React)
     clip-path.ts               # CSS clip-path polygon generation
     use-intersection.ts        # IntersectionObserver hook (lazy rendering + throttling)
     path-optimizer.ts          # SVG path simplification (Ramer-Douglas-Peucker)
@@ -144,8 +148,40 @@ playground/                    # Vite + React demo app
 - Separate `wavy-bavy/devtools` entry point (zero bytes in production)
 - 225 unit tests across 14 files
 - Build: ESM devtools 18.65 KB, index 55.79 KB (unchanged)
-### Phase 6: Multi-Framework Support -- TODO
-### Phase 7: NPM Publishing & CI/CD -- TODO
+### Phase 6: Multi-Framework Support -- COMPLETE
+- `<wavy-section>` web component (Shadow DOM, `<slot>` content projection, 12 observed attributes)
+- Extracted pure keyframe generators to `src/utils/keyframes.ts` (no React dependency)
+- Web component reuses `generatePath`, `KEYFRAME_GENERATORS`, `DEFAULT_VIEWBOX_WIDTH` from core
+- SSR-safe: `customElements.define` guarded, all browser APIs guarded
+- `prefers-reduced-motion` media query listener auto-disables animations
+- Safe DOM construction (no innerHTML — uses `createElementNS` for SVG)
+- Separate `wavy-bavy/web-component` entry point (zero React in bundle)
+- `WavySectionAttributes` TypeScript interface for type-safe attribute access
+- Next.js and Remix already supported (all client files have `'use client'`, SSR-safe)
+- Astro supported via `@astrojs/react` (React) or native web component
+- 257 unit tests across 17 files (32 new: web-component, keyframes, SSR safety)
+- Build: ESM web-component 11.35 KB, index 55.87 KB (unchanged)
+### Phase 7: NPM Publishing & CI/CD -- COMPLETE
+- GitHub Actions CI workflow (Node 18/20/22 matrix, lint, test, build, size check)
+- GitHub Actions publish workflow (NPM publish with provenance on tag push, GitHub release)
+- Bundle size gates via size-limit for all 6 entry points
+- `peerDependenciesMeta` (react/react-dom optional for web-component users)
+- Enhanced `prepublishOnly` (lint + test + build)
+- CHANGELOG.md (Keep a Changelog format)
+- CI badge in README
+### Phase 7.5: Wave Polish -- COMPLETE
+- Interlocking dual-wave system: 4 modes (interlock, overlap, apart, flush) via `generateInterlockPaths()`
+- 3 new pattern generators: flowing (S-curves), ribbon (varying thickness), layered-organic (dense organic)
+- SVG path morphing animations: drift, breathe, undulate, ripple-out via CSS `d: path()` interpolation
+- `PATH_MORPH_GENERATORS` registry (separate from transform-based `KEYFRAME_GENERATORS`)
+- Velocity-adaptive scroll tracker (`createScrollTracker`) with exponential smoothing
+- Procedural uniqueness via `autoSeed()` (golden-ratio hash from section position)
+- `WaveSeparationConfig` type + `separation` prop on `WaveSection`
+- `DEFAULT_SEPARATION` config + 5 new presets (hero-dramatic, section-subtle, section-bold, cta-sweep, clean-divide)
+- Web component updated: 5 new attributes (separation-mode, intensity, gap, stroke-color, stroke-width)
+- Full backward compatibility: single-path mode remains default
+- 300 unit tests across 21 files (43 new)
+- Build: ESM index 72.11 KB, web-component 24.57 KB, all entries within size budget
 ### Phase 8: Integration into sinthu-consulting -- TODO
 
 ## Conventions

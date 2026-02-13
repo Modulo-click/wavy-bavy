@@ -18,10 +18,14 @@ export { parseBackground, hexToRgb, rgbToHex, interpolateColors, isDark } from '
 export { generatePath, generateLayeredPaths, flipPathVertically } from './utils/path-generator'
 export { useWaveAnimation, useReducedMotion, generateMorphFrames } from './utils/animation'
 export type { UseWaveAnimationOptions, UseWaveAnimationResult } from './utils/animation'
+export { KEYFRAME_GENERATORS, PATH_MORPH_GENERATORS, generatePathKeyframes } from './utils/keyframes'
 export { generateClipPath, generateDualClipPath } from './utils/clip-path'
 export { useIntersection, useMergedRef } from './utils/use-intersection'
 export type { UseIntersectionOptions } from './utils/use-intersection'
 export { optimizePath } from './utils/path-optimizer'
+export { generateInterlockPaths, autoSeed } from './utils/interlock-generator'
+export type { InterlockOptions } from './utils/interlock-generator'
+export { createScrollTracker } from './utils/scroll-tracker'
 export { useScrollProgress } from './utils/use-scroll-progress'
 export type { ScrollProgressOptions } from './utils/use-scroll-progress'
 export { useScrollVelocity } from './utils/use-scroll-velocity'
@@ -42,6 +46,7 @@ export {
     DEFAULT_SCROLL_ANIMATION,
     DEFAULT_PARALLAX,
     DEFAULT_HOVER,
+    DEFAULT_SEPARATION,
 } from './constants'
 
 // Tailwind plugin (re-exported for convenience; primary access via 'wavy-bavy/tailwind')
@@ -104,4 +109,16 @@ export type {
     ExportSVGOptions,
     ExportRasterOptions,
     ResolvedPresetConfig,
+
+    // Separation / Interlock
+    WaveSeparationConfig,
+    InterlockMode,
+    DualPathResult,
+
+    // Scroll Tracker
+    ScrollTracker,
+    ScrollTrackerOptions,
+
+    // Web Component
+    WavySectionAttributes,
 } from './types'

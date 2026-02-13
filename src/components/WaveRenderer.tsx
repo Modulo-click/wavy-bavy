@@ -80,6 +80,12 @@ export function WaveRenderer({
     lazy = false,
     hover,
     parallaxOffset,
+    pathB,
+    separation,
+    pathAKeyframesCSS,
+    pathBKeyframesCSS,
+    pathAAnimId,
+    pathBAnimId,
     className = '',
     animationStyle,
 }: WaveRendererProps & { animationStyle?: CSSProperties }) {
@@ -97,6 +103,9 @@ export function WaveRenderer({
     const hasFilter = !!shadow || !!glow || !!texture || !!innerShadow
     const filterId = hasFilter ? `wave-filter-${Math.random().toString(36).slice(2, 8)}` : undefined
 
+    // Dual-path mode active when pathB is provided
+    const isDualPath = !!pathB
+
     // Extract wave contour for stroke (excludes baseline edges)
     const strokePath = useMemo(
         () => (stroke ? extractWaveContour(path) : undefined),
@@ -108,6 +117,20 @@ export function WaveRenderer({
 
     // Bottom area path: covers below the wave curve, no effects
     const bottomPath = useMemo(() => extendPathBelow(path, height), [path, height])
+
+    // Dual-path: Path B bottom area
+    const bottomPathB = useMemo(
+        () => pathB ? extendPathBelow(pathB, height) : undefined,
+        [pathB, height],
+    )
+
+    // Build path morphing keyframes style block for injection into SVG
+    const morphKeyframesCSS = useMemo(() => {
+        const parts: string[] = []
+        if (pathAKeyframesCSS) parts.push(pathAKeyframesCSS)
+        if (pathBKeyframesCSS) parts.push(pathBKeyframesCSS)
+        return parts.length > 0 ? parts.join('\n') : undefined
+    }, [pathAKeyframesCSS, pathBKeyframesCSS])
 
     // ── Container styles (layout + fallback background + rotation) ──
     const containerStyle: CSSProperties = {
@@ -196,9 +219,9 @@ export function WaveRenderer({
                     style={{ width: '100%', height: '100%', display: 'block' }}
                     xmlns="http://www.w3.org/2000/svg"
                 >
-                    {/* Filters */}
-                    {hasFilter && (
-                        <defs>
+                    {/* Defs: filters + path morphing keyframes */}
+                    <defs>
+                        {hasFilter && (
                             <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
                                 {shadow && (
                                     <feDropShadow
@@ -282,8 +305,11 @@ export function WaveRenderer({
                                     </>
                                 )}
                             </filter>
-                        </defs>
-                    )}
+                        )}
+                        {morphKeyframesCSS && (
+                            <style>{morphKeyframesCSS}</style>
+                        )}
+                    </defs>
 
                     {/* Path 1: Top area — containerColor + effects (owning section) */}
                     <path
@@ -293,14 +319,60 @@ export function WaveRenderer({
                         filter={filterId ? `url(#${filterId})` : undefined}
                     />
 
-                    {/* Path 2: Bottom area — fillColor, no effects (adjacent section) */}
-                    <path
-                        d={bottomPath}
-                        fill={stroke && !stroke.fill ? 'none' : fillColor}
-                    />
+                    {isDualPath ? (
+                        <>
+                            {/* Dual-path mode: Path A (upper edge) with d: path() morphing */}
+                            <path
+                                d={bottomPath}
+                                fill={stroke && !stroke.fill ? 'none' : containerColor}
+                                style={pathAAnimId ? {
+                                    animation: `${pathAAnimId} 10s ease-in-out infinite`,
+                                } : undefined}
+                            />
+                            {/* Dual-path mode: Path B (lower edge) with d: path() morphing */}
+                            <path
+                                d={bottomPathB}
+                                fill={stroke && !stroke.fill ? 'none' : fillColor}
+                                style={pathBAnimId ? {
+                                    animation: `${pathBAnimId} 10s ease-in-out infinite`,
+                                    animationDelay: '-3s',
+                                } : undefined}
+                            />
+                            {/* Separation stroke on both edges */}
+                            {separation?.strokeColor && (
+                                <>
+                                    <path
+                                        d={extractWaveContour(path)}
+                                        fill="none"
+                                        stroke={separation.strokeColor}
+                                        strokeWidth={separation.strokeWidth ?? 1}
+                                        strokeLinecap="round"
+                                    />
+                                    <path
+                                        d={extractWaveContour(pathB!)}
+                                        fill="none"
+                                        stroke={separation.strokeColor}
+                                        strokeWidth={separation.strokeWidth ?? 1}
+                                        strokeLinecap="round"
+                                    />
+                                </>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            {/* Single-path mode: Bottom area — fillColor, no effects */}
+                            <path
+                                d={bottomPath}
+                                fill={stroke && !stroke.fill ? 'none' : fillColor}
+                                style={pathAAnimId ? {
+                                    animation: `${pathAAnimId} 10s ease-in-out infinite`,
+                                } : undefined}
+                            />
+                        </>
+                    )}
 
                     {/* Stroke path (wave contour only — no baseline edges) */}
-                    {stroke && strokePath && (
+                    {stroke && strokePath && !isDualPath && (
                         <path
                             d={strokePath}
                             fill="none"

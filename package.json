@@ -40,6 +40,11 @@
             "types": "./dist/devtools.d.ts",
             "import": "./dist/devtools.mjs",
             "require": "./dist/devtools.js"
+        },
+        "./web-component": {
+            "types": "./dist/web-component.d.ts",
+            "import": "./dist/web-component.mjs",
+            "require": "./dist/web-component.js"
         }
     },
     "files": [
@@ -54,12 +59,16 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "lint": "tsc --noEmit",
-        "prepublishOnly": "npm run build",
+        "prepublishOnly": "npm run lint && npm test && npm run build",
         "size": "size-limit"
     },
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0"
+    },
+    "peerDependenciesMeta": {
+        "react": { "optional": true },
+        "react-dom": { "optional": true }
     },
     "devDependencies": {
         "@types/react": "^18.2.0",
@@ -70,7 +79,9 @@
         "typescript": "^5.3.0",
         "vitest": "^1.0.0",
         "@testing-library/react": "^14.0.0",
-        "jsdom": "^23.0.0"
+        "jsdom": "^23.0.0",
+        "size-limit": "^11.0.0",
+        "@size-limit/preset-small-lib": "^11.0.0"
     },
     "keywords": [
         "react",
@@ -84,6 +95,10 @@
         "transition",
         "wavy",
         "seamless",
-        "clip-path"
+        "clip-path",
+        "web-component",
+        "custom-element",
+        "astro",
+        "vanilla-js"
     ]
 }

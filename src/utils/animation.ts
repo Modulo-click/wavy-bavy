@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useState, useSyncExternalStore } from '
 import type { AnimationName, AnimationConfig } from '../types'
 import { generatePath } from './path-generator'
 import type { PatternName, PatternConfig } from '../types'
+import { KEYFRAME_GENERATORS } from './keyframes'
 
 // ============================================================
 // useReducedMotion — prefers-reduced-motion detection
@@ -44,95 +45,6 @@ export function useReducedMotion(): boolean {
     )
 }
 
-// ============================================================
-// Animation Keyframe Generators
-// ============================================================
-
-/**
- * Generate CSS @keyframes for the 'flow' animation.
- * Gentle horizontal phase shift — waves appear to move sideways.
- */
-function flowKeyframes(id: string): string {
-    return `
-@keyframes ${id} {
-  0%   { transform: translateX(0); }
-  50%  { transform: translateX(-5%); }
-  100% { transform: translateX(0); }
-}`
-}
-
-/**
- * Generate CSS @keyframes for the 'pulse' animation.
- * Vertical scaling — waves grow and shrink.
- */
-function pulseKeyframes(id: string): string {
-    return `
-@keyframes ${id} {
-  0%   { transform: scaleY(1); }
-  50%  { transform: scaleY(1.15); }
-  100% { transform: scaleY(1); }
-}`
-}
-
-/**
- * Generate CSS @keyframes for the 'morph' animation.
- * Uses SVG path morphing via changing the 'd' attribute.
- * Falls back to scale + translate combo in CSS.
- */
-function morphKeyframes(id: string): string {
-    return `
-@keyframes ${id} {
-  0%   { transform: scaleY(1) scaleX(1); }
-  25%  { transform: scaleY(1.08) scaleX(1.02); }
-  50%  { transform: scaleY(0.92) scaleX(1.04); }
-  75%  { transform: scaleY(1.05) scaleX(0.98); }
-  100% { transform: scaleY(1) scaleX(1); }
-}`
-}
-
-/**
- * Generate CSS @keyframes for the 'ripple' animation.
- * Wave-like ripple effect via translate + scale.
- */
-function rippleKeyframes(id: string): string {
-    return `
-@keyframes ${id} {
-  0%   { transform: translateX(0) scaleY(1); }
-  20%  { transform: translateX(-2%) scaleY(1.05); }
-  40%  { transform: translateX(1%) scaleY(0.95); }
-  60%  { transform: translateX(-1%) scaleY(1.03); }
-  80%  { transform: translateX(0.5%) scaleY(0.98); }
-  100% { transform: translateX(0) scaleY(1); }
-}`
-}
-
-/**
- * Generate CSS @keyframes for the 'bounce' animation.
- * Subtle bounce effect on the wave.
- */
-function bounceKeyframes(id: string): string {
-    return `
-@keyframes ${id} {
-  0%   { transform: translateY(0); }
-  40%  { transform: translateY(-8px); }
-  60%  { transform: translateY(-4px); }
-  80%  { transform: translateY(-6px); }
-  100% { transform: translateY(0); }
-}`
-}
-
-// ============================================================
-// Keyframe Registry
-// ============================================================
-
-const KEYFRAME_GENERATORS: Record<Exclude<AnimationName, 'none' | 'custom'>, (id: string) => string> = {
-    flow: flowKeyframes,
-    pulse: pulseKeyframes,
-    morph: morphKeyframes,
-    ripple: rippleKeyframes,
-    bounce: bounceKeyframes,
-}
-
 // Track injected stylesheets globally to avoid duplicates
 const injectedAnimations = new Set<string>()
 
@@ -146,7 +58,7 @@ function injectKeyframes(animationId: string, name: Exclude<AnimationName, 'none
         // Inject user-provided keyframes with the animation ID
         css = `@keyframes ${animationId} { ${customKeyframes} }`
     } else if (name !== 'custom') {
-        const generator = KEYFRAME_GENERATORS[name]
+        const generator = KEYFRAME_GENERATORS[name as keyof typeof KEYFRAME_GENERATORS]
         if (!generator) return
         css = generator(animationId)
     }

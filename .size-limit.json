@@ -1,0 +1,8 @@
+[
+  { "name": "index (ESM)", "path": "dist/index.mjs", "limit": "25 KB", "ignore": ["react", "react-dom"] },
+  { "name": "web-component (ESM)", "path": "dist/web-component.mjs", "limit": "15 KB" },
+  { "name": "animations (ESM)", "path": "dist/animations.mjs", "limit": "12 KB", "ignore": ["react", "react-dom"] },
+  { "name": "effects (ESM)", "path": "dist/effects.mjs", "limit": "2 KB" },
+  { "name": "devtools (ESM)", "path": "dist/devtools.mjs", "limit": "20 KB", "ignore": ["react", "react-dom"] },
+  { "name": "tailwind (ESM)", "path": "dist/tailwind/plugin.mjs", "limit": "5 KB" }
+]

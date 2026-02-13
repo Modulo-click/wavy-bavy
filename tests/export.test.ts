@@ -191,9 +191,9 @@ describe('resolvePreset', () => {
 // ============================================================
 
 describe('getAllPresets', () => {
-    it('returns all 7 presets', () => {
+    it('returns all 12 presets', () => {
         const all = getAllPresets()
-        expect(Object.keys(all)).toHaveLength(7)
+        expect(Object.keys(all)).toHaveLength(12)
     })
 
     it('every preset is fully resolved', () => {

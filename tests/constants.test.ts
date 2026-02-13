@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DEFAULTS, BREAKPOINTS, PATTERN_REGISTRY, PRESETS, DEFAULT_SHADOW, DEFAULT_GLOW } from '../src/constants'
+import { DEFAULTS, BREAKPOINTS, PATTERN_REGISTRY, PRESETS, DEFAULT_SHADOW, DEFAULT_GLOW, DEFAULT_SEPARATION } from '../src/constants'
 
 describe('DEFAULTS', () => {
     it('has expected default values', () => {
@@ -76,5 +76,37 @@ describe('DEFAULT_GLOW', () => {
     it('has expected values', () => {
         expect(DEFAULT_GLOW.intensity).toBe(20)
         expect(DEFAULT_GLOW.opacity).toBe(0.5)
+    })
+})
+
+describe('DEFAULT_SEPARATION', () => {
+    it('has correct defaults', () => {
+        expect(DEFAULT_SEPARATION.mode).toBe('interlock')
+        expect(DEFAULT_SEPARATION.intensity).toBe(0.5)
+        expect(DEFAULT_SEPARATION.gap).toBe(0)
+    })
+})
+
+describe('new presets', () => {
+    it('has hero-dramatic preset', () => {
+        expect(PRESETS['hero-dramatic']).toBeDefined()
+        expect(PRESETS['hero-dramatic'].pattern).toBe('flowing')
+    })
+
+    it('has section-subtle preset', () => {
+        expect(PRESETS['section-subtle']).toBeDefined()
+    })
+
+    it('has section-bold preset', () => {
+        expect(PRESETS['section-bold']).toBeDefined()
+    })
+
+    it('has cta-sweep preset', () => {
+        expect(PRESETS['cta-sweep']).toBeDefined()
+        expect(PRESETS['cta-sweep'].pattern).toBe('ribbon')
+    })
+
+    it('has clean-divide preset', () => {
+        expect(PRESETS['clean-divide']).toBeDefined()
     })
 })

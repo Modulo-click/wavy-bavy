@@ -130,7 +130,7 @@ describe('WavePatternGallery', () => {
             <WavePatternGallery backgroundColor="#000" fillColor="#fff" />,
         )
         const rects = container.querySelectorAll('rect')
-        expect(rects.length).toBe(4) // one per pattern
+        expect(rects.length).toBe(7) // one per pattern (4 original + 3 new)
         rects.forEach((rect) => {
             expect(rect.getAttribute('fill')).toBe('#000')
         })

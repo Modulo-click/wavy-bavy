@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode, ElementType } from 'react'
 // ============================================================
 
 /** Available built-in wave patterns */
-export type PatternName = 'smooth' | 'organic' | 'sharp' | 'layered' | 'mountain' | 'custom'
+export type PatternName = 'smooth' | 'organic' | 'sharp' | 'layered' | 'mountain' | 'flowing' | 'ribbon' | 'layered-organic' | 'custom'
 
 /** Function that generates an SVG path string for a wave */
 export type PatternGenerator = (config: PatternConfig) => string
@@ -69,7 +69,7 @@ export interface ParsedBackground {
 // ============================================================
 
 /** Built-in animation names */
-export type AnimationName = 'flow' | 'pulse' | 'morph' | 'ripple' | 'bounce' | 'custom' | 'none'
+export type AnimationName = 'flow' | 'pulse' | 'morph' | 'ripple' | 'bounce' | 'drift' | 'breathe' | 'undulate' | 'ripple-out' | 'custom' | 'none'
 
 /** Custom animation configuration */
 export interface AnimationConfig {
@@ -193,6 +193,61 @@ export interface HoverConfig {
     glow?: boolean
     /** CSS transition string. Default: 'transform 0.3s ease, filter 0.3s ease' */
     transition?: string
+}
+
+// ============================================================
+// Interlocking Wave Separation Types
+// ============================================================
+
+/** Interaction mode for dual-wave interlocking */
+export type InterlockMode = 'interlock' | 'overlap' | 'apart' | 'flush'
+
+/** Configuration for how two wave edges interact at a section transition */
+export interface WaveSeparationConfig {
+    /** How the two wave paths interact. Default: 'interlock' */
+    mode: InterlockMode
+    /** Depth of interlocking teeth (0.0-1.0). Default: 0.5 */
+    intensity: number
+    /** Gap in px between the two wave edges. Default: 0 */
+    gap: number
+    /** Stroke color applied to wave edges. Default: undefined */
+    strokeColor?: string
+    /** Stroke width in px for wave edges. Default: undefined */
+    strokeWidth?: number
+}
+
+/** Result of dual-path interlocking generation */
+export interface DualPathResult {
+    /** SVG path for the upper section's bottom edge */
+    pathA: string
+    /** SVG path for the lower section's top edge */
+    pathB: string
+    /** The shared base curve both paths derive from */
+    baseCurve: string
+}
+
+/** Options for the vanilla JS scroll tracker */
+export interface ScrollTrackerOptions {
+    /** Maximum velocity threshold in px/s. Default: 2000 */
+    maxVelocity?: number
+    /** Minimum damping (at max speed). Default: 0.02 */
+    minDamping?: number
+    /** Maximum damping (at zero speed). Default: 0.15 */
+    maxDamping?: number
+}
+
+/** Return value from createScrollTracker */
+export interface ScrollTracker {
+    /** Current smoothed scroll offset */
+    readonly offset: number
+    /** Current scroll velocity in px/s */
+    readonly velocity: number
+    /** Current adaptive damping factor */
+    readonly damping: number
+    /** Update with new scroll position — call in rAF */
+    update(scrollY: number, timestamp: number): void
+    /** Reset to initial state */
+    reset(): void
 }
 
 // ============================================================
@@ -348,6 +403,8 @@ export interface WaveSectionProps {
     parallax?: boolean | ParallaxConfig
     /** Hover effect on wave. Default: false */
     hover?: boolean | HoverConfig
+    /** Dual-wave separation config. Default: { mode: 'interlock', intensity: 0.5, gap: 0 } */
+    separation?: boolean | Partial<WaveSeparationConfig>
     /** Callback fired when section enters viewport */
     onEnter?: () => void
     /** Callback fired when section leaves viewport */
@@ -439,6 +496,18 @@ export interface WaveRendererProps {
     hover?: HoverConfig
     /** Parallax offset (px). Y applied via viewBox shift, X via CSS transform. */
     parallaxOffset?: { x: number; y: number }
+    /** Second interlocking path (Path B). When provided, dual-path mode is active. */
+    pathB?: string
+    /** Separation config for dual-path mode */
+    separation?: WaveSeparationConfig
+    /** Pre-generated CSS keyframes for Path A (d: path() morphing) */
+    pathAKeyframesCSS?: string
+    /** Pre-generated CSS keyframes for Path B (d: path() morphing) */
+    pathBKeyframesCSS?: string
+    /** Unique animation ID for path A */
+    pathAAnimId?: string
+    /** Unique animation ID for path B */
+    pathBAnimId?: string
     /** Additional class */
     className?: string
 }
@@ -492,4 +561,29 @@ export interface ResolvedPresetConfig {
     glow: boolean
     layers: number
     layerOpacity: number
+}
+
+// ============================================================
+// Web Component Types
+// ============================================================
+
+/** Attributes accepted by the `<wavy-section>` custom element */
+export interface WavySectionAttributes {
+    pattern?: PatternName
+    height?: number
+    amplitude?: number
+    frequency?: number
+    background?: string
+    'fill-color'?: string
+    animate?: AnimationName | 'none'
+    'animation-duration'?: number
+    'wave-position'?: 'top' | 'bottom' | 'both'
+    phase?: number
+    mirror?: boolean
+    seed?: number
+    'separation-mode'?: InterlockMode
+    intensity?: number
+    gap?: number
+    'stroke-color'?: string
+    'stroke-width'?: number
 }

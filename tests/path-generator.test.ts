@@ -162,3 +162,47 @@ describe('generateLayeredPaths', () => {
         expect(paths).toHaveLength(1)
     })
 })
+
+// ============================================================
+// New patterns (flowing, ribbon, layered-organic)
+// ============================================================
+
+describe('generatePath — new patterns', () => {
+    it('generates a flowing path (large S-curve)', () => {
+        const path = generatePath('flowing', { amplitude: 0.8 })
+        expect(path).toContain('M')
+        expect(path).toContain('C')
+        expect(path).toContain('Z')
+    })
+
+    it('flowing path changes with amplitude', () => {
+        const low = generatePath('flowing', { amplitude: 0.2 })
+        const high = generatePath('flowing', { amplitude: 0.9 })
+        expect(low).not.toBe(high)
+    })
+
+    it('generates a ribbon path (varying thickness)', () => {
+        const path = generatePath('ribbon', { seed: 42 })
+        expect(path).toContain('M')
+        expect(path).toContain('C')
+        expect(path).toContain('Z')
+    })
+
+    it('ribbon path is seed-deterministic', () => {
+        const a = generatePath('ribbon', { seed: 42 })
+        const b = generatePath('ribbon', { seed: 42 })
+        expect(a).toBe(b)
+    })
+
+    it('generates a layered-organic path', () => {
+        const path = generatePath('layered-organic', { seed: 7 })
+        expect(path).toContain('M')
+        expect(path).toContain('Z')
+    })
+
+    it('layered-organic differs from organic', () => {
+        const lo = generatePath('layered-organic', { seed: 42 })
+        const org = generatePath('organic', { seed: 42 })
+        expect(lo).not.toBe(org)
+    })
+})

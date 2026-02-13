@@ -1,4 +1,4 @@
-import type { WaveDefaults, WavePreset, PatternGenerator, PatternConfig, StrokeConfig, BlurConfig, TextureConfig, InnerShadowConfig, ScrollAnimationConfig, ParallaxConfig, HoverConfig } from './types'
+import type { WaveDefaults, WavePreset, PatternGenerator, PatternConfig, StrokeConfig, BlurConfig, TextureConfig, InnerShadowConfig, ScrollAnimationConfig, ParallaxConfig, HoverConfig, WaveSeparationConfig } from './types'
 
 // ============================================================
 // Default Configuration
@@ -129,6 +129,87 @@ function generateMountainPath(config: PatternConfig): string {
 }
 
 /**
+ * Flowing S-curve — large dramatic sweep across the full width.
+ * Designed for high-intensity hero transitions.
+ */
+function generateFlowingPath(config: PatternConfig): string {
+    const { width, height, amplitude, phase } = config
+    const waveHeight = height * amplitude
+    const cy = height - waveHeight
+    const shift = (phase ?? 0) * width * 0.2
+
+    return [
+        `M 0 ${height}`,
+        `L 0 ${cy + waveHeight * 0.8}`,
+        `C ${width * 0.15 + shift} ${cy - waveHeight * 0.3}, ${width * 0.35 + shift} ${cy + waveHeight * 1.1}, ${width * 0.5} ${cy + waveHeight * 0.4}`,
+        `C ${width * 0.65 - shift} ${cy - waveHeight * 0.2}, ${width * 0.85 - shift} ${cy + waveHeight * 0.9}, ${width} ${cy + waveHeight * 0.5}`,
+        `L ${width} ${height}`,
+        `Z`,
+    ].join(' ')
+}
+
+/**
+ * Ribbon pattern — smooth curve with varying visual thickness.
+ * Wider at peaks, thinner at zero-crossings. Seed controls personality.
+ */
+function generateRibbonPath(config: PatternConfig): string {
+    const { width, height, amplitude, seed } = config
+    const waveHeight = height * amplitude
+    const cy = height - waveHeight
+
+    const s = seed ?? 33
+    const pr = (i: number) => {
+        const x = Math.sin(s * 7919 + i * 6271) * 10000
+        return x - Math.floor(x)
+    }
+
+    const r1 = pr(1) * 0.3 + 0.2
+    const r2 = pr(2) * 0.3 + 0.3
+    const r3 = pr(3) * 0.3 + 0.1
+    const r4 = pr(4) * 0.3 + 0.25
+
+    return [
+        `M 0 ${height}`,
+        `L 0 ${cy + waveHeight * r1}`,
+        `C ${width * 0.12} ${cy - waveHeight * r2}, ${width * 0.28} ${cy + waveHeight * r3}, ${width * 0.38} ${cy + waveHeight * 0.1}`,
+        `C ${width * 0.48} ${cy - waveHeight * r4}, ${width * 0.58} ${cy + waveHeight * r1}, ${width * 0.68} ${cy + waveHeight * r3}`,
+        `C ${width * 0.78} ${cy - waveHeight * r2}, ${width * 0.92} ${cy + waveHeight * r4}, ${width} ${cy + waveHeight * r1}`,
+        `L ${width} ${height}`,
+        `Z`,
+    ].join(' ')
+}
+
+/**
+ * Layered-organic — denser organic curve with more control points.
+ * Designed for multi-layer stacking with slight offsets.
+ */
+function generateLayeredOrganicPath(config: PatternConfig): string {
+    const { width, height, amplitude, seed } = config
+    const waveHeight = height * amplitude
+    const cy = height - waveHeight
+
+    const s = seed ?? 57
+    const pr = (i: number) => {
+        const x = Math.sin(s * 4801 + i * 7723) * 10000
+        return x - Math.floor(x)
+    }
+
+    const points = 5
+    const segments: string[] = [`M 0 ${height}`, `L 0 ${cy + waveHeight * pr(0)}`]
+
+    for (let i = 0; i < points; i++) {
+        const x1 = (width / points) * i + (width / points) * 0.3
+        const x2 = (width / points) * (i + 1)
+        const cy1 = cy + waveHeight * (pr(i * 2 + 1) - 0.3)
+        const cy2 = cy + waveHeight * pr(i * 2 + 2)
+        segments.push(`C ${x1} ${cy1}, ${x2 - (width / points) * 0.3} ${cy2}, ${x2} ${cy + waveHeight * pr(i + points)}`)
+    }
+
+    segments.push(`L ${width} ${height}`, `Z`)
+    return segments.join(' ')
+}
+
+/**
  * Registry of all built-in pattern generators
  */
 export const PATTERN_REGISTRY: Record<string, PatternGenerator> = {
@@ -136,6 +217,9 @@ export const PATTERN_REGISTRY: Record<string, PatternGenerator> = {
     organic: generateOrganicPath,
     sharp: generateSharpPath,
     mountain: generateMountainPath,
+    flowing: generateFlowingPath,
+    ribbon: generateRibbonPath,
+    'layered-organic': generateLayeredOrganicPath,
 }
 
 // ============================================================
@@ -184,6 +268,35 @@ export const PRESETS: Record<string, WavePreset> = {
         height: 150,
         amplitude: 0.6,
         frequency: 3,
+    },
+    'hero-dramatic': {
+        pattern: 'flowing',
+        height: 350,
+        amplitude: 0.9,
+        animate: 'undulate',
+    },
+    'section-subtle': {
+        pattern: 'smooth',
+        height: 80,
+        amplitude: 0.2,
+        animate: 'drift',
+    },
+    'section-bold': {
+        pattern: 'organic',
+        height: 160,
+        amplitude: 0.5,
+        animate: 'breathe',
+    },
+    'cta-sweep': {
+        pattern: 'ribbon',
+        height: 280,
+        amplitude: 0.8,
+        animate: 'undulate',
+    },
+    'clean-divide': {
+        pattern: 'smooth',
+        height: 60,
+        amplitude: 0.1,
     },
 }
 
@@ -251,4 +364,10 @@ export const DEFAULT_HOVER: HoverConfig = {
     lift: -4,
     glow: false,
     transition: 'transform 0.3s ease, filter 0.3s ease',
+}
+
+export const DEFAULT_SEPARATION: WaveSeparationConfig = {
+    mode: 'interlock',
+    intensity: 0.5,
+    gap: 0,
 }
