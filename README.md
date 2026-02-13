@@ -12,7 +12,8 @@ Seamless, automatic wave transitions between page sections. Context-aware, respo
 - 🎨 **Color Matching** — Waves auto-match section background colors
 - 📐 **6+ Patterns** — Smooth, organic, sharp, layered, mountain, custom
 - 🖼️ **Image Clipping** — Background images follow the wave contour
-- ✨ **Effects** — Shadows, glow, layered depths
+- ✨ **Effects** — Shadows, glow, stroke, blur, texture, inner shadows
+- 🎬 **Animations** — Flow, pulse, morph, ripple, bounce, drift, breathe + custom
 - 📱 **Responsive** — Different heights per breakpoint
 - ♿ **Accessible** — Respects `prefers-reduced-motion`
 - 🪶 **Lightweight** — Zero runtime dependencies, tree-shakable
@@ -72,6 +73,22 @@ That's it! Waves are automatically generated between sections.
 <WaveSection preset="peaks" />      {/* Mountain range */}
 ```
 
+## Animations
+
+```tsx
+<WaveSection animate="flow" />           {/* Gentle horizontal drift */}
+<WaveSection animate="pulse" />          {/* Vertical grow/shrink */}
+<WaveSection animate="morph" />          {/* Shape morphing */}
+<WaveSection animate="ripple" />         {/* Wave ripple */}
+<WaveSection animate="bounce" />         {/* Subtle bounce */}
+<WaveSection animate="drift" />          {/* Horizontal glide */}
+<WaveSection animate="breathe" />        {/* Rhythmic amplitude */}
+<WaveSection animate="undulate" />       {/* Full 2D wave motion */}
+
+{/* Control speed */}
+<WaveSection animate="flow" animationDuration={6} />
+```
+
 ## Customization
 
 ```tsx
@@ -126,6 +143,12 @@ That's it! Waves are automatically generated between sections.
 | `seed` | `number` | — | Seed for reproducible random patterns |
 | `shadow` | `boolean \| ShadowConfig` | `false` | Drop shadow effect |
 | `glow` | `boolean \| GlowConfig` | `false` | Glow effect |
+| `stroke` | `boolean \| StrokeConfig` | `false` | Stroke/outline on wave |
+| `blur` | `boolean \| BlurConfig` | `false` | Frosted glass effect |
+| `texture` | `boolean \| TextureConfig` | `false` | Texture overlay |
+| `innerShadow` | `boolean \| InnerShadowConfig` | `false` | Inner shadow effect |
+| `animate` | `AnimationName \| false` | `'none'` | Animation type |
+| `animationDuration` | `number` | `4` | Animation duration in seconds |
 | `layers` | `number` | `1` | Stacked wave layers |
 | `layerOpacity` | `number` | `0.3` | Opacity for extra layers |
 | `as` | `ElementType` | `'section'` | HTML element type |

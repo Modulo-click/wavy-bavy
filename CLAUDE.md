@@ -80,7 +80,9 @@ playground/                    # Vite + React demo app
 - Each `WaveSection` auto-registers on mount, providing its background color and config
 - Adjacent sections are detected automatically; wave colors are derived from neighboring backgrounds
 - `WaveRenderer` generates SVG paths using pattern generators (smooth, organic, sharp, mountain)
-- Animations use CSS keyframe injection via `useWaveAnimation` hook (supports custom keyframes)
+- Two animation pipelines: transform-based (pulse, bounce) via `useWaveAnimation` hook on wrapper div, and path morph (flow, morph, ripple, drift, breathe, undulate, ripple-out) via CSS `d: path()` interpolation directly on SVG `<path>` elements
+- Path morph animations animate both the top path (container area) and bottom path (fill area) in sync — the top path keyframes are derived from the bottom by applying `invertPathToTop()` to each morph frame
+- `animationDuration` prop flows from `WaveSection` through to `WaveRenderer` for path morph timing (default 4s)
 - `useReducedMotion` auto-disables animations when user prefers reduced motion
 - Effects (stroke, blur, texture, innerShadow) compose via SVG filter pipeline in `WaveRenderer`
 - Lazy rendering and animation throttling use `useIntersection` (IntersectionObserver)
@@ -182,7 +184,43 @@ playground/                    # Vite + React demo app
 - Full backward compatibility: single-path mode remains default
 - 300 unit tests across 21 files (43 new)
 - Build: ESM index 72.11 KB, web-component 24.57 KB, all entries within size budget
-### Phase 8: Integration into sinthu-consulting -- TODO
+### Phase 8: Library Polish -- COMPLETE
+- SVG gradient fills: `GradientConfig` type, `fillGradient` / `containerGradient` props on WaveSection & WaveRenderer
+- Linear and radial gradient support via SVG `<linearGradient>` / `<radialGradient>` defs
+- Responsive heights: `height={{ sm: 80, md: 120, lg: 180 }}` generates CSS media queries per breakpoint
+- Performance: stable filter IDs via `useId()` (no `Math.random()`), ref-based `getSectionBefore`/`getSectionAfter` to prevent unnecessary context re-renders
+- Prop validation: amplitude clamped [0,1], frequency clamped [0.1,20] with console warnings
+- Improved error messages: unknown patterns/animations list available options
+- 318 unit tests across 24 files (18 new: gradient, responsive-height, validation)
+- Build: ESM index 75.73 KB (11.22 KB brotli), all entries within size budget
+### Phase 8.5: Wave Quality & Interactive Playground -- COMPLETE
+- Replaced slide animations (flow, morph, ripple) with true SVG path morphing via CSS `d: path()` interpolation
+- `KEYFRAME_GENERATORS` reduced to transform-based only (pulse, bounce); `PATH_MORPH_GENERATORS` expanded to 7 entries
+- Legacy keyframe functions preserved with `Legacy` suffix aliases for backward compatibility
+- Coordinated dual-path animation sync via `generateDualPathMorphKeyframes()` (no more -3s delay ripping)
+- Auto-gradient from adjacent section colors: `autoGradient` prop generates 3-stop gradient from neighboring backgrounds
+- `generateAutoGradient()` utility using `interpolateColors()` for midpoint blending
+- Section-level frosted glass: `blur.section` extends backdrop-filter to section content area
+- SVG edge fix: viewBox extended horizontally (-20/+40) to prevent filter/transform edge clipping
+- Interactive playground sandbox (`WaveSandbox`): real-time controls for pattern, shape, animation, effects, stroke, seed
+- Web component updated: morph animation duration respects `animation-duration` attribute, dual-path sync fixed
+- 326 unit tests across 24 files (8 new/updated)
+- Build: ESM index 79.31 KB (11.45 KB brotli), web-component 24.95 KB (3.77 KB brotli), all entries within size budget
+### Phase 8.6: Playground Reorganization -- COMPLETE
+- Per-section inline controls (`DemoSection` component) replacing global `WaveSandbox`
+- Wave edge clipping fix: all 7 path generators + interlock generator extended horizontally (-20/+20px)
+- Playground reorganized by feature type (patterns, animations, effects, interaction, advanced, utilities)
+- Consolidated ~35 sections down to ~18 with feature-descriptive labels
+- Removed all phase tags, badges, and banner sections
+- 326 unit tests across 24 files (unchanged)
+- Build: ESM index 79.57 KB (11.48 KB brotli), all entries within size budget
+### Bugfix: Broken Animations (post-Phase 8.6)
+- Fixed path morph animations (flow, ripple, drift, etc.) being invisible: top SVG path was static while bottom path animated, masking half the oscillation. Now both paths animate in sync.
+- Fixed hardcoded 10s animation duration: `animationDuration` prop now passed through `WaveRendererProps` to all path morph `<path>` elements (default 4s).
+- Increased pulse `scaleY` from 1.15 to 1.3 for visible effect.
+- Build: ESM index 85.73 KB, web-component 25.21 KB, all entries within size budget
+
+### Phase 9: Integration into sinthu-consulting -- TODO
 
 ## Conventions
 
