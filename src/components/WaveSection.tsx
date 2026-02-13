@@ -141,6 +141,17 @@ export function WaveSection({
     const bgValue = backgroundImage ? `url(${backgroundImage})` : background
     const parsedBg = useMemo(() => parseBackground(bgValue), [bgValue])
 
+    // ── Debug metadata (zero overhead when debug is off) ──
+    const isDebug = ctx?.debug ?? false
+    const debugMeta = isDebug
+        ? {
+              pattern: patternProp ?? resolvedPreset?.pattern ?? defaults.pattern,
+              amplitude: amplitudeProp ?? resolvedPreset?.amplitude ?? defaults.amplitude,
+              frequency: frequencyProp ?? resolvedPreset?.frequency ?? defaults.frequency,
+              animate: animate ?? resolvedPreset?.animate ?? defaults.animate,
+          }
+        : undefined
+
     // ── Register once on mount, update on prop changes ──
     useEffect(() => {
         if (!ctxRegister || !ctxUpdate) return
@@ -154,6 +165,7 @@ export function WaveSection({
                 background: parsedBg,
                 wavePosition: wavePos,
                 element: sectionRef.current,
+                debugMeta,
             })
             registeredRef.current = true
             return () => {
@@ -165,9 +177,10 @@ export function WaveSection({
             ctxUpdate(sectionId, {
                 background: parsedBg,
                 wavePosition: wavePos,
+                debugMeta,
             })
         }
-    }, [ctxRegister, ctxUpdate, sectionId, parsedBg, wavePositionProp])
+    }, [ctxRegister, ctxUpdate, sectionId, parsedBg, wavePositionProp, isDebug, debugMeta?.pattern, debugMeta?.amplitude, debugMeta?.frequency, debugMeta?.animate])
 
     // Update element ref after mount
     useEffect(() => {

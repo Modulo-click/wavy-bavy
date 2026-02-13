@@ -58,7 +58,15 @@ src/
   tailwind/
     plugin.ts                  # Tailwind CSS plugin (utility classes, JIT, presets)
     theme.ts                   # Default theme tokens (heights, patterns, durations)
-tests/                         # Vitest test suite (150 tests, 10 files)
+  devtools/
+    index.ts                   # Devtools barrel export entry point (wavy-bavy/devtools)
+    WaveDebugPanel.tsx         # Enhanced debug overlay (opt-in, collapsible, boundary outlines)
+    WavePatternGallery.tsx     # Pattern preview grid (standalone, no context)
+    export-svg.ts              # SVG export utility (deterministic, SSR-safe)
+    export-raster.ts           # PNG/WebP export via Canvas (browser-only)
+    export-clipboard.ts        # Clip-path CSS clipboard copy
+    preset-resolver.ts         # Preset introspection (resolvePreset, getAllPresets)
+tests/                         # Vitest test suite (225 tests, 14 files)
 playground/                    # Vite + React demo app
 ```
 
@@ -115,8 +123,27 @@ playground/                    # Vite + React demo app
 - CSS-only mode: `WaveSectionCSS` component (clip-path polygon, no SVG, no context)
 - 150 unit tests across 10 files
 - Build: ESM index 44.56 KB, animations 9.54 KB, effects 739 B, Tailwind plugin 3.32 KB
-### Phase 4: Scroll & Interaction -- TODO
-### Phase 5: Dev Tools -- TODO
+### Phase 4: Scroll & Interaction -- COMPLETE
+- `useScrollProgress` hook (element/page scroll progress, damping)
+- `useScrollVelocity` hook (scroll speed/direction detection)
+- Scroll-linked animations (`scrollAnimate` prop: paused + negative delay from scroll progress)
+- Parallax layers (`parallax` prop with ParallaxConfig: speed, vertical/horizontal)
+- Hover effects (`hover` prop with HoverConfig: scale, lift, glow boost, transition)
+- Intersection callbacks (`onEnter`, `onExit`, `onProgress` props)
+- 187 unit tests across 12 files
+- Build: ESM index 55.79 KB, animations 9.54 KB, effects 739 B, Tailwind plugin 3.32 KB
+
+### Phase 5: Dev Tools & Export -- COMPLETE
+- Enhanced debug panel (`WaveDebugPanel` from `wavy-bavy/devtools`): section list, color swatches, pattern/amplitude/frequency, boundary outlines, collapsible, configurable position
+- Pattern gallery (`WavePatternGallery`): mini SVG previews for all patterns, `onSelect` callback, standalone (no context)
+- SVG export (`exportWaveAsSVG`): deterministic config-based generation, stroke/shadow support, `downloadSVG` browser helper
+- Raster export (`exportWaveAsRaster`): PNG/WebP via Canvas, scale factor, `downloadRaster` helper (browser-only)
+- Clip-path clipboard (`generateClipPathCSS`, `copyClipPathToClipboard`): wraps existing clip-path utility
+- Preset introspection (`resolvePreset`, `getAllPresets`): fully hydrated preset configs with no undefined fields
+- Keyboard debug toggle (Ctrl+Shift+D), `debug` on WaveContextValue, `debugMeta` on SectionRegistration
+- Separate `wavy-bavy/devtools` entry point (zero bytes in production)
+- 225 unit tests across 14 files
+- Build: ESM devtools 18.65 KB, index 55.79 KB (unchanged)
 ### Phase 6: Multi-Framework Support -- TODO
 ### Phase 7: NPM Publishing & CI/CD -- TODO
 ### Phase 8: Integration into sinthu-consulting -- TODO

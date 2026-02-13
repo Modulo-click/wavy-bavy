@@ -6,6 +6,7 @@ export default defineConfig({
         effects: 'src/effects.ts',
         animations: 'src/animations.ts',
         'tailwind/plugin': 'src/tailwind/plugin.ts',
+        devtools: 'src/devtools/index.ts',
     },
     format: ['esm', 'cjs'],
     dts: true,

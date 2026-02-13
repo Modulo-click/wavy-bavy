@@ -3,11 +3,12 @@
 import {
     createContext,
     useCallback,
+    useEffect,
     useMemo,
     useRef,
     useState,
 } from 'react'
-import type { WaveContextValue, WaveDefaults, SectionRegistration, WaveProviderProps } from '../types'
+import type { WaveContextValue, WaveDefaults, SectionRegistration, WaveProviderProps, DebugPanelConfig } from '../types'
 import { DEFAULTS } from '../constants'
 
 // ============================================================
@@ -35,9 +36,38 @@ WaveContext.displayName = 'WaveContext'
  * </WaveProvider>
  * ```
  */
-export function WaveProvider({ defaults: userDefaults, debug = false, children }: WaveProviderProps) {
+export function WaveProvider({ defaults: userDefaults, debug: debugProp = false, children }: WaveProviderProps) {
     const [sections, setSections] = useState<SectionRegistration[]>([])
     const orderCounter = useRef(0)
+
+    // Resolve debug config
+    const debugConfig: Partial<DebugPanelConfig> | undefined =
+        typeof debugProp === 'object' ? debugProp : undefined
+    const [debugEnabled, setDebugEnabled] = useState(!!debugProp)
+
+    // Keyboard shortcut toggle
+    const shortcut = debugConfig?.toggleShortcut ?? 'ctrl+shift+d'
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            const parts = shortcut.toLowerCase().split('+')
+            const key = parts[parts.length - 1]
+            const needCtrl = parts.includes('ctrl')
+            const needShift = parts.includes('shift')
+            const needAlt = parts.includes('alt')
+
+            if (
+                e.key.toLowerCase() === key &&
+                e.ctrlKey === needCtrl &&
+                e.shiftKey === needShift &&
+                e.altKey === needAlt
+            ) {
+                e.preventDefault()
+                setDebugEnabled((prev) => !prev)
+            }
+        }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [shortcut])
 
     const defaults = useMemo<WaveDefaults>(
         () => ({ ...DEFAULTS, ...userDefaults }),
@@ -104,13 +134,13 @@ export function WaveProvider({ defaults: userDefaults, debug = false, children }
     )
 
     const value = useMemo<WaveContextValue>(
-        () => ({ sections, register, update, getSectionBefore, getSectionAfter, defaults }),
-        [sections, register, update, getSectionBefore, getSectionAfter, defaults],
+        () => ({ sections, register, update, getSectionBefore, getSectionAfter, defaults, debug: debugEnabled }),
+        [sections, register, update, getSectionBefore, getSectionAfter, defaults, debugEnabled],
     )
 
     return (
         <WaveContext.Provider value={value}>
-            {debug && <WaveDebugOverlay sections={sections} />}
+            {debugEnabled && <WaveDebugOverlay sections={sections} />}
             {children}
         </WaveContext.Provider>
     )

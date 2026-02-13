@@ -94,4 +94,14 @@ export type {
 
     // Presets
     WavePreset,
+
+    // Debug
+    DebugPanelConfig,
+    DebugPanelPosition,
+    DebugMeta,
+
+    // Export
+    ExportSVGOptions,
+    ExportRasterOptions,
+    ResolvedPresetConfig,
 } from './types'

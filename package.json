@@ -35,6 +35,11 @@
             "types": "./dist/tailwind/plugin.d.ts",
             "import": "./dist/tailwind/plugin.mjs",
             "require": "./dist/tailwind/plugin.js"
+        },
+        "./devtools": {
+            "types": "./dist/devtools.d.ts",
+            "import": "./dist/devtools.mjs",
+            "require": "./dist/devtools.js"
         }
     },
     "files": [

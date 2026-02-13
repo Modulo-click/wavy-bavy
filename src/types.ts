@@ -199,6 +199,18 @@ export interface HoverConfig {
 // Section Registration (Context)
 // ============================================================
 
+/** Debug metadata attached to registered sections when debug mode is active */
+export interface DebugMeta {
+    /** Pattern in use */
+    pattern: PatternName
+    /** Amplitude value */
+    amplitude: number
+    /** Frequency value */
+    frequency: number
+    /** Animation name */
+    animate: AnimationName | false
+}
+
 /** Config stored per registered section in context */
 export interface SectionRegistration {
     /** Unique section ID */
@@ -211,6 +223,8 @@ export interface SectionRegistration {
     wavePosition: WavePosition
     /** The DOM element ref for measurements */
     element: HTMLElement | null
+    /** Debug metadata (only present when debug mode is active) */
+    debugMeta?: DebugMeta
 }
 
 /** The context value provided by WaveProvider */
@@ -227,6 +241,8 @@ export interface WaveContextValue {
     getSectionAfter: (id: string) => SectionRegistration | null
     /** Global default settings */
     defaults: WaveDefaults
+    /** Whether debug mode is active */
+    debug: boolean
 }
 
 /** Global default settings configurable via WaveProvider */
@@ -365,11 +381,26 @@ export interface WaveSectionProps {
 // WaveProvider Props
 // ============================================================
 
+/** Debug panel position */
+export type DebugPanelPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+
+/** Configuration for the enhanced debug panel */
+export interface DebugPanelConfig {
+    /** Panel position on screen. Default: 'top-right' */
+    position: DebugPanelPosition
+    /** Show section boundary outlines on the page. Default: true */
+    showBoundaries: boolean
+    /** Show section configuration details. Default: true */
+    showConfig: boolean
+    /** Keyboard shortcut to toggle debug. Default: 'ctrl+shift+d' */
+    toggleShortcut: string
+}
+
 export interface WaveProviderProps {
     /** Global default settings for all WaveSections */
     defaults?: Partial<WaveDefaults>
-    /** Enable debug mode (shows section boundaries). Default: false */
-    debug?: boolean
+    /** Enable debug mode. Pass true for minimal overlay, or a config object for enhanced mode. Default: false */
+    debug?: boolean | Partial<DebugPanelConfig>
     children: ReactNode
 }
 
@@ -410,4 +441,55 @@ export interface WaveRendererProps {
     parallaxOffset?: { x: number; y: number }
     /** Additional class */
     className?: string
+}
+
+// ============================================================
+// Export & Devtools Types
+// ============================================================
+
+/** Options for SVG export */
+export interface ExportSVGOptions {
+    /** Wave pattern. Default: 'smooth' */
+    pattern?: PatternName
+    /** Wave height in px. Default: 120 */
+    height?: number
+    /** Wave amplitude (0-1). Default: 0.5 */
+    amplitude?: number
+    /** Number of wave peaks. Default: 1 */
+    frequency?: number
+    /** Fill color for the wave area. Default: '#6c5ce7' */
+    fillColor?: string
+    /** Background color behind the wave. Default: '#ffffff' */
+    backgroundColor?: string
+    /** Viewbox width. Default: 1440 */
+    width?: number
+    /** Seed for organic patterns */
+    seed?: number
+    /** Stroke config */
+    stroke?: StrokeConfig
+    /** Shadow config */
+    shadow?: ShadowConfig
+}
+
+/** Options for raster (PNG/WebP) export */
+export interface ExportRasterOptions extends ExportSVGOptions {
+    /** Output format. Default: 'png' */
+    format?: 'png' | 'webp'
+    /** Output image width in px. Default: 1440 */
+    imageWidth?: number
+    /** Scale factor (e.g. 2 for retina). Default: 1 */
+    scale?: number
+}
+
+/** A fully resolved preset with no undefined fields */
+export interface ResolvedPresetConfig {
+    pattern: PatternName
+    height: number
+    amplitude: number
+    frequency: number
+    animate: AnimationName
+    shadow: boolean
+    glow: boolean
+    layers: number
+    layerOpacity: number
 }

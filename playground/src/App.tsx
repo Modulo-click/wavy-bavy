@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { WaveProvider, WaveSection, WaveSectionCSS, useScrollProgress } from 'wavy-bavy'
+import DevToolsDemo from './DevToolsDemo'
 
 // ── Scroll Progress Indicator (uses useScrollProgress hook directly) ──
 function ScrollProgressBar() {
@@ -57,6 +58,7 @@ export default function App() {
                             <span className="phase-tag phase-1">Phase 1-2: Core</span>
                             <span className="phase-tag phase-3">Phase 3: Effects</span>
                             <span className="phase-tag phase-4">Phase 4: Scroll</span>
+                            <span className="phase-tag phase-5">Phase 5: DevTools</span>
                         </div>
                     </div>
                 </WaveSection>
@@ -784,12 +786,33 @@ export default function App() {
                 </WaveSection>
 
                 {/* ============================================================ */}
+                {/* PHASE 5: DEV TOOLS & EXPORT */}
+                {/* ============================================================ */}
+
+                {/* ── Phase 5 Banner ── */}
+                <WaveSection background="#2d3436" pattern="smooth">
+                    <div className="section-content" style={{ color: '#ffffff' }}>
+                        <span className="phase-tag phase-5" style={{ fontSize: '1rem' }}>Phase 5</span>
+                        <h1 style={{ marginTop: 12 }}>Dev Tools & Export</h1>
+                        <p>
+                            Enhanced debug panel, pattern gallery, SVG/PNG export,
+                            clip-path clipboard, and preset introspection.
+                        </p>
+                    </div>
+                </WaveSection>
+
+                {/* ── 5a. DevTools Demo ── */}
+                <WaveSection background="#f8f9fa" pattern="smooth">
+                    <DevToolsDemo />
+                </WaveSection>
+
+                {/* ============================================================ */}
                 {/* Footer -- Dark */}
                 {/* ============================================================ */}
                 <WaveSection background="#191919" preset="footer" wavePosition="none">
                     <footer style={{ color: 'rgba(255,255,255,0.5)' }}>
                         <p>
-                            <strong style={{ color: '#fff' }}>wavy-bavy</strong> -- Phase 1-4 Playground Demo
+                            <strong style={{ color: '#fff' }}>wavy-bavy</strong> -- Phase 1-5 Playground Demo
                             <br />
                             <a
                                 href="https://github.com/Modulo-click/wavy-bavy"
