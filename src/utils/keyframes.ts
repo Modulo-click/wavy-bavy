@@ -6,10 +6,10 @@ import { generatePath } from './path-generator'
 // ============================================================
 
 /**
- * Generate CSS @keyframes for the 'flow' animation.
- * Gentle horizontal phase shift — waves appear to move sideways.
+ * Legacy CSS @keyframes for the 'flow' animation (translateX-based).
+ * @deprecated Use path morphing flow instead (via PATH_MORPH_GENERATORS).
  */
-export function flowKeyframes(id: string): string {
+export function flowLegacyKeyframes(id: string): string {
     return `
 @keyframes ${id} {
   0%   { transform: translateX(0); }
@@ -17,6 +17,8 @@ export function flowKeyframes(id: string): string {
   100% { transform: translateX(0); }
 }`
 }
+/** @deprecated Alias for flowLegacyKeyframes */
+export const flowKeyframes = flowLegacyKeyframes
 
 /**
  * Generate CSS @keyframes for the 'pulse' animation.
@@ -26,17 +28,16 @@ export function pulseKeyframes(id: string): string {
     return `
 @keyframes ${id} {
   0%   { transform: scaleY(1); }
-  50%  { transform: scaleY(1.15); }
+  50%  { transform: scaleY(1.3); }
   100% { transform: scaleY(1); }
 }`
 }
 
 /**
- * Generate CSS @keyframes for the 'morph' animation.
- * Uses SVG path morphing via changing the 'd' attribute.
- * Falls back to scale + translate combo in CSS.
+ * Legacy CSS @keyframes for the 'morph' animation (scaleX/scaleY-based).
+ * @deprecated Use path morphing morph instead (via PATH_MORPH_GENERATORS).
  */
-export function morphKeyframes(id: string): string {
+export function morphLegacyKeyframes(id: string): string {
     return `
 @keyframes ${id} {
   0%   { transform: scaleY(1) scaleX(1); }
@@ -46,12 +47,14 @@ export function morphKeyframes(id: string): string {
   100% { transform: scaleY(1) scaleX(1); }
 }`
 }
+/** @deprecated Alias for morphLegacyKeyframes */
+export const morphKeyframes = morphLegacyKeyframes
 
 /**
- * Generate CSS @keyframes for the 'ripple' animation.
- * Wave-like ripple effect via translate + scale.
+ * Legacy CSS @keyframes for the 'ripple' animation (translateX/scaleY-based).
+ * @deprecated Use path morphing ripple instead (via PATH_MORPH_GENERATORS).
  */
-export function rippleKeyframes(id: string): string {
+export function rippleLegacyKeyframes(id: string): string {
     return `
 @keyframes ${id} {
   0%   { transform: translateX(0) scaleY(1); }
@@ -62,6 +65,8 @@ export function rippleKeyframes(id: string): string {
   100% { transform: translateX(0) scaleY(1); }
 }`
 }
+/** @deprecated Alias for rippleLegacyKeyframes */
+export const rippleKeyframes = rippleLegacyKeyframes
 
 /**
  * Generate CSS @keyframes for the 'bounce' animation.
@@ -79,16 +84,13 @@ export function bounceKeyframes(id: string): string {
 }
 
 // ============================================================
-// Keyframe Registry (CSS transform-based — backwards compatible)
+// Keyframe Registry (CSS transform-based — pulse & bounce only)
 // ============================================================
 
-type TransformAnimationName = 'flow' | 'pulse' | 'morph' | 'ripple' | 'bounce'
+type TransformAnimationName = 'pulse' | 'bounce'
 
 export const KEYFRAME_GENERATORS: Record<TransformAnimationName, (id: string) => string> = {
-    flow: flowKeyframes,
     pulse: pulseKeyframes,
-    morph: morphKeyframes,
-    ripple: rippleKeyframes,
     bounce: bounceKeyframes,
 }
 
@@ -186,11 +188,112 @@ export function rippleOutKeyframes(id: string, basePath: string, pattern: Patter
     return buildPathKeyframesCSS(id, frames)
 }
 
+/**
+ * Flow animation (path morphing) — gentle horizontal phase drift.
+ * Replaces the legacy translateX-based flow animation.
+ */
+export function flowPathMorphKeyframes(id: string, basePath: string, pattern: PatternName = 'smooth', config?: Partial<PathKeyframeOptions['config']>): string {
+    const cfg = { height: 120, amplitude: 0.5, frequency: 1, ...config }
+    const frames = generatePathKeyframes({
+        basePath, frameCount: 5, phaseRange: 0.3, amplitudeVariation: 0.03, pattern, config: cfg,
+    })
+    return buildPathKeyframesCSS(id, frames)
+}
+
+/**
+ * Morph animation (path morphing) — shape change via amplitude variation.
+ * Replaces the legacy scaleX/scaleY-based morph animation.
+ */
+export function morphPathMorphKeyframes(id: string, basePath: string, pattern: PatternName = 'smooth', config?: Partial<PathKeyframeOptions['config']>): string {
+    const cfg = { height: 120, amplitude: 0.5, frequency: 1, ...config }
+    const frames = generatePathKeyframes({
+        basePath, frameCount: 5, phaseRange: 0.2, amplitudeVariation: 0.12, pattern, config: cfg,
+    })
+    return buildPathKeyframesCSS(id, frames)
+}
+
+/**
+ * Ripple animation (path morphing) — wave ripple via phase + amplitude.
+ * Replaces the legacy translateX/scaleY-based ripple animation.
+ */
+export function ripplePathMorphKeyframes(id: string, basePath: string, pattern: PatternName = 'smooth', config?: Partial<PathKeyframeOptions['config']>): string {
+    const cfg = { height: 120, amplitude: 0.5, frequency: 1, ...config }
+    const frames = generatePathKeyframes({
+        basePath, frameCount: 7, phaseRange: 0.5, amplitudeVariation: 0.06, pattern, config: cfg,
+    })
+    return buildPathKeyframesCSS(id, frames)
+}
+
 // ============================================================
-// Path Morph Registry (d: path() interpolation — new animations)
+// Dual-Path Coordinated Keyframes (sync A and B together)
+// ============================================================
+
+/**
+ * Generate coordinated path-morphing keyframes for dual-path interlock mode.
+ * Both paths use identical phase/amplitude parameters per frame to stay in sync.
+ */
+export function generateDualPathMorphKeyframes(
+    idA: string,
+    idB: string,
+    _basePathA: string,
+    _basePathB: string,
+    animName: string,
+    pattern: PatternName,
+    config: Partial<PathKeyframeOptions['config']>,
+): { cssA: string; cssB: string } {
+    const gen = PATH_MORPH_GENERATORS[animName]
+    if (!gen) return { cssA: '', cssB: '' }
+
+    // Look up the animation parameters from the registry defaults
+    const paramMap: Record<string, { frameCount: number; phaseRange: number; amplitudeVariation: number }> = {
+        flow: { frameCount: 5, phaseRange: 0.3, amplitudeVariation: 0.03 },
+        morph: { frameCount: 5, phaseRange: 0.2, amplitudeVariation: 0.12 },
+        ripple: { frameCount: 7, phaseRange: 0.5, amplitudeVariation: 0.06 },
+        drift: { frameCount: 5, phaseRange: 0.4, amplitudeVariation: 0.05 },
+        breathe: { frameCount: 5, phaseRange: 0.05, amplitudeVariation: 0.2 },
+        undulate: { frameCount: 7, phaseRange: 0.5, amplitudeVariation: 0.15 },
+        'ripple-out': { frameCount: 7, phaseRange: 0.8, amplitudeVariation: 0.1 },
+    }
+
+    const params = paramMap[animName] ?? { frameCount: 5, phaseRange: 0.3, amplitudeVariation: 0.05 }
+    const cfg = { height: 120, amplitude: 0.5, frequency: 1, ...config }
+
+    // Generate frames for both paths using identical t values
+    const framesA: string[] = []
+    const framesB: string[] = []
+
+    for (let i = 0; i < params.frameCount; i++) {
+        const t = i === params.frameCount - 1 ? 0 : i / (params.frameCount - 1)
+        const phaseShift = Math.sin(t * Math.PI * 2) * params.phaseRange
+        const ampFactor = 1 + Math.sin(t * Math.PI * 2) * params.amplitudeVariation
+
+        const frameConfig = {
+            ...cfg,
+            phase: (cfg.phase ?? 0) + phaseShift,
+            amplitude: cfg.amplitude * ampFactor,
+        }
+
+        framesA.push(generatePath(pattern === 'custom' ? 'smooth' : pattern, frameConfig))
+        framesB.push(generatePath(pattern === 'custom' ? 'smooth' : pattern, {
+            ...frameConfig,
+            seed: (frameConfig.seed ?? 0) + 1000, // Different seed for path B but same anim params
+        }))
+    }
+
+    return {
+        cssA: buildPathKeyframesCSS(idA, framesA),
+        cssB: buildPathKeyframesCSS(idB, framesB),
+    }
+}
+
+// ============================================================
+// Path Morph Registry (d: path() interpolation)
 // ============================================================
 
 export const PATH_MORPH_GENERATORS: Record<string, (id: string, basePath: string, pattern?: PatternName, config?: Partial<PathKeyframeOptions['config']>) => string> = {
+    flow: flowPathMorphKeyframes,
+    morph: morphPathMorphKeyframes,
+    ripple: ripplePathMorphKeyframes,
     drift: driftKeyframes,
     breathe: breatheKeyframes,
     undulate: undulateKeyframes,

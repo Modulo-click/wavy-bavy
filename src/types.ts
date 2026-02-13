@@ -65,6 +65,28 @@ export interface ParsedBackground {
 }
 
 // ============================================================
+// Gradient Types
+// ============================================================
+
+/** A single color stop in a gradient */
+export interface GradientStop {
+    /** CSS color value */
+    color: string
+    /** Position in the gradient (0-1) */
+    offset: number
+}
+
+/** SVG gradient configuration for wave fills */
+export interface GradientConfig {
+    /** Gradient type */
+    type: 'linear' | 'radial'
+    /** Color stops (minimum 2) */
+    stops: GradientStop[]
+    /** Angle in degrees for linear gradients (0 = left-to-right, 90 = top-to-bottom). Default: 0 */
+    angle?: number
+}
+
+// ============================================================
 // Animation Types
 // ============================================================
 
@@ -133,6 +155,8 @@ export interface BlurConfig {
     opacity: number
     /** Saturation multiplier. Default: 1.2 */
     saturation: number
+    /** Also apply backdrop-filter to the section element. Default: false */
+    section?: boolean
 }
 
 /** Texture overlay configuration */
@@ -226,6 +250,17 @@ export interface DualPathResult {
     baseCurve: string
 }
 
+/** Per-edge wave configuration for independent upper/lower wave control */
+export interface WaveEdgeConfig {
+    pattern?: PatternName
+    amplitude?: number
+    frequency?: number
+    height?: number
+    phase?: number
+    mirror?: boolean
+    seed?: number
+}
+
 /** Options for the vanilla JS scroll tracker */
 export interface ScrollTrackerOptions {
     /** Maximum velocity threshold in px/s. Default: 2000 */
@@ -280,6 +315,10 @@ export interface SectionRegistration {
     element: HTMLElement | null
     /** Debug metadata (only present when debug mode is active) */
     debugMeta?: DebugMeta
+    /** Independent upper (top) edge wave configuration */
+    upperWave?: WaveEdgeConfig
+    /** Independent lower (bottom) edge wave configuration */
+    lowerWave?: WaveEdgeConfig
 }
 
 /** The context value provided by WaveProvider */
@@ -378,6 +417,14 @@ export interface WaveSectionProps {
     /** Custom CSS @keyframes string (used with animate='custom') */
     customKeyframes?: string
 
+    // --- Gradient Fills ---
+    /** SVG gradient for the wave fill area. Overrides auto-detected fill color. */
+    fillGradient?: GradientConfig
+    /** SVG gradient for the container area behind the wave. Overrides auto-detected container color. */
+    containerGradient?: GradientConfig
+    /** Auto-generate gradient from adjacent section colors. Default: false */
+    autoGradient?: boolean
+
     // --- Effects ---
     /** Drop shadow on wave. Default: false */
     shadow?: boolean | ShadowConfig
@@ -405,6 +452,10 @@ export interface WaveSectionProps {
     hover?: boolean | HoverConfig
     /** Dual-wave separation config. Default: { mode: 'interlock', intensity: 0.5, gap: 0 } */
     separation?: boolean | Partial<WaveSeparationConfig>
+    /** Independent config for this section's upper (top) wave edge */
+    upperWave?: WaveEdgeConfig
+    /** Independent config for this section's lower (bottom) wave edge */
+    lowerWave?: WaveEdgeConfig
     /** Callback fired when section enters viewport */
     onEnter?: () => void
     /** Callback fired when section leaves viewport */
@@ -472,6 +523,10 @@ export interface WaveRendererProps {
     fillColor: string
     /** Container background color (behind the wave) */
     containerColor: string
+    /** SVG gradient for the wave fill area */
+    fillGradient?: GradientConfig
+    /** SVG gradient for the container area */
+    containerGradient?: GradientConfig
     /** Wave height in px */
     height: number
     /** Wave direction */
@@ -508,6 +563,8 @@ export interface WaveRendererProps {
     pathAAnimId?: string
     /** Unique animation ID for path B */
     pathBAnimId?: string
+    /** Animation duration in seconds for path morph animations. Default: 4 */
+    animationDuration?: number
     /** Additional class */
     className?: string
 }

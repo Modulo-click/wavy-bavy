@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import type { WaveRendererProps } from '../types'
+import { useId, useMemo, useState } from 'react'
+import type { WaveRendererProps, GradientConfig } from '../types'
 import { DEFAULT_VIEWBOX_WIDTH } from '../constants'
 import type { CSSProperties } from 'react'
 import { useIntersection } from '../utils/use-intersection'
@@ -33,8 +33,8 @@ function extractWaveContour(path: string): string {
 function extendPathBelow(pathStr: string, height: number): string {
     const ext = height + 50
     return pathStr
-        .replace(/^M\s+0\s+[\d.]+/, `M 0 ${ext}`)
-        .replace(/L\s+([\d.]+)\s+[\d.]+(\s*Z\s*)$/, `L $1 ${ext}$2`)
+        .replace(/^M\s+(-?\d+\.?\d*)\s+[\d.]+/, `M $1 ${ext}`)
+        .replace(/L\s+(-?\d+\.?\d*)\s+[\d.]+(\s*Z\s*)$/, `L $1 ${ext}$2`)
 }
 
 /**
@@ -46,8 +46,37 @@ function extendPathBelow(pathStr: string, height: number): string {
  */
 function invertPathToTop(pathStr: string): string {
     return pathStr
-        .replace(/^M\s+0\s+[\d.]+/, 'M 0 -50')
-        .replace(/L\s+([\d.]+)\s+[\d.]+(\s*Z\s*)$/, 'L $1 -50$2')
+        .replace(/^M\s+(-?\d+\.?\d*)\s+[\d.]+/, 'M $1 -50')
+        .replace(/L\s+(-?\d+\.?\d*)\s+[\d.]+(\s*Z\s*)$/, 'L $1 -50$2')
+}
+
+/**
+ * Render an SVG gradient definition element.
+ */
+function renderGradientDef(config: GradientConfig, id: string) {
+    if (config.type === 'radial') {
+        return (
+            <radialGradient id={id} cx="50%" cy="50%" r="50%">
+                {config.stops.map((stop, i) => (
+                    <stop key={i} offset={`${stop.offset * 100}%`} stopColor={stop.color} />
+                ))}
+            </radialGradient>
+        )
+    }
+    // Linear gradient — convert angle to SVG x1/y1/x2/y2
+    const angle = config.angle ?? 0
+    const rad = (angle * Math.PI) / 180
+    const x1 = `${50 - Math.cos(rad) * 50}%`
+    const y1 = `${50 + Math.sin(rad) * 50}%`
+    const x2 = `${50 + Math.cos(rad) * 50}%`
+    const y2 = `${50 - Math.sin(rad) * 50}%`
+    return (
+        <linearGradient id={id} x1={x1} y1={y1} x2={x2} y2={y2}>
+            {config.stops.map((stop, i) => (
+                <stop key={i} offset={`${stop.offset * 100}%`} stopColor={stop.color} />
+            ))}
+        </linearGradient>
+    )
 }
 
 /**
@@ -69,6 +98,8 @@ export function WaveRenderer({
     path,
     fillColor,
     containerColor,
+    fillGradient,
+    containerGradient,
     height,
     direction,
     shadow,
@@ -86,12 +117,14 @@ export function WaveRenderer({
     pathBKeyframesCSS,
     pathAAnimId,
     pathBAnimId,
+    animationDuration,
     className = '',
     animationStyle,
 }: WaveRendererProps & { animationStyle?: CSSProperties }) {
     const viewBoxWidth = DEFAULT_VIEWBOX_WIDTH
     const isUp = direction === 'up'
     const [isHovered, setIsHovered] = useState(false)
+    const stableId = useId()
 
     // Lazy rendering via IntersectionObserver
     const [intersectionRef, isVisible] = useIntersection({
@@ -101,7 +134,15 @@ export function WaveRenderer({
 
     // Build SVG filter for shadow/glow/texture/innerShadow effects
     const hasFilter = !!shadow || !!glow || !!texture || !!innerShadow
-    const filterId = hasFilter ? `wave-filter-${Math.random().toString(36).slice(2, 8)}` : undefined
+    const filterId = hasFilter ? `wave-filter-${stableId.replace(/:/g, '')}` : undefined
+
+    // Gradient IDs (stable, SSR-safe)
+    const fillGradientId = fillGradient ? `wave-fill-grad-${stableId.replace(/:/g, '')}` : undefined
+    const containerGradientId = containerGradient ? `wave-container-grad-${stableId.replace(/:/g, '')}` : undefined
+
+    // Resolve fill references (gradient URL or solid color)
+    const fillRef = fillGradientId ? `url(#${fillGradientId})` : fillColor
+    const containerRef = containerGradientId ? `url(#${containerGradientId})` : containerColor
 
     // Dual-path mode active when pathB is provided
     const isDualPath = !!pathB
@@ -114,6 +155,18 @@ export function WaveRenderer({
 
     // Top area path: covers above the wave curve, gets effects
     const topPath = useMemo(() => invertPathToTop(path), [path])
+
+    // Generate top path morph keyframes from bottom path keyframes
+    const topMorphAnim = useMemo(() => {
+        if (!pathAKeyframesCSS || !pathAAnimId) return undefined
+        const topAnimId = pathAAnimId + '-top'
+        const topCSS = pathAKeyframesCSS
+            .replace(pathAAnimId, topAnimId)
+            .replace(/d:\s*path\("([^"]+)"\)/g, (_: string, pathStr: string) => {
+                return `d: path("${invertPathToTop(pathStr)}")`
+            })
+        return { css: topCSS, animId: topAnimId }
+    }, [pathAKeyframesCSS, pathAAnimId])
 
     // Bottom area path: covers below the wave curve, no effects
     const bottomPath = useMemo(() => extendPathBelow(path, height), [path, height])
@@ -129,8 +182,9 @@ export function WaveRenderer({
         const parts: string[] = []
         if (pathAKeyframesCSS) parts.push(pathAKeyframesCSS)
         if (pathBKeyframesCSS) parts.push(pathBKeyframesCSS)
+        if (topMorphAnim?.css) parts.push(topMorphAnim.css)
         return parts.length > 0 ? parts.join('\n') : undefined
-    }, [pathAKeyframesCSS, pathBKeyframesCSS])
+    }, [pathAKeyframesCSS, pathBKeyframesCSS, topMorphAnim?.css])
 
     // ── Container styles (layout + fallback background + rotation) ──
     const containerStyle: CSSProperties = {
@@ -214,13 +268,15 @@ export function WaveRenderer({
         >
             <div style={wrapperStyle}>
                 <svg
-                    viewBox={`0 ${parallaxY} ${viewBoxWidth} ${height}`}
+                    viewBox={`-20 ${parallaxY} ${viewBoxWidth + 40} ${height}`}
                     preserveAspectRatio="none"
                     style={{ width: '100%', height: '100%', display: 'block' }}
                     xmlns="http://www.w3.org/2000/svg"
                 >
-                    {/* Defs: filters + path morphing keyframes */}
+                    {/* Defs: gradients + filters + path morphing keyframes */}
                     <defs>
+                        {fillGradient && fillGradientId && renderGradientDef(fillGradient, fillGradientId)}
+                        {containerGradient && containerGradientId && renderGradientDef(containerGradient, containerGradientId)}
                         {hasFilter && (
                             <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
                                 {shadow && (
@@ -314,9 +370,12 @@ export function WaveRenderer({
                     {/* Path 1: Top area — containerColor + effects (owning section) */}
                     <path
                         d={topPath}
-                        fill={containerColor}
+                        fill={containerRef}
                         fillOpacity={blur ? blur.opacity : undefined}
                         filter={filterId ? `url(#${filterId})` : undefined}
+                        style={topMorphAnim ? {
+                            animation: `${topMorphAnim.animId} ${animationDuration ?? 4}s ease-in-out infinite`,
+                        } : undefined}
                     />
 
                     {isDualPath ? (
@@ -324,18 +383,17 @@ export function WaveRenderer({
                             {/* Dual-path mode: Path A (upper edge) with d: path() morphing */}
                             <path
                                 d={bottomPath}
-                                fill={stroke && !stroke.fill ? 'none' : containerColor}
+                                fill={stroke && !stroke.fill ? 'none' : containerRef}
                                 style={pathAAnimId ? {
-                                    animation: `${pathAAnimId} 10s ease-in-out infinite`,
+                                    animation: `${pathAAnimId} ${animationDuration ?? 4}s ease-in-out infinite`,
                                 } : undefined}
                             />
                             {/* Dual-path mode: Path B (lower edge) with d: path() morphing */}
                             <path
                                 d={bottomPathB}
-                                fill={stroke && !stroke.fill ? 'none' : fillColor}
+                                fill={stroke && !stroke.fill ? 'none' : fillRef}
                                 style={pathBAnimId ? {
-                                    animation: `${pathBAnimId} 10s ease-in-out infinite`,
-                                    animationDelay: '-3s',
+                                    animation: `${pathBAnimId} ${animationDuration ?? 4}s ease-in-out infinite`,
                                 } : undefined}
                             />
                             {/* Separation stroke on both edges */}
@@ -363,9 +421,9 @@ export function WaveRenderer({
                             {/* Single-path mode: Bottom area — fillColor, no effects */}
                             <path
                                 d={bottomPath}
-                                fill={stroke && !stroke.fill ? 'none' : fillColor}
+                                fill={stroke && !stroke.fill ? 'none' : fillRef}
                                 style={pathAAnimId ? {
-                                    animation: `${pathAAnimId} 10s ease-in-out infinite`,
+                                    animation: `${pathAAnimId} ${animationDuration ?? 4}s ease-in-out infinite`,
                                 } : undefined}
                             />
                         </>

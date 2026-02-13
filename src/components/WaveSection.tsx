@@ -21,14 +21,16 @@ import type {
     ParallaxConfig,
     HoverConfig,
     WaveSeparationConfig,
+    WaveEdgeConfig,
 } from '../types'
 import { useOptionalWaveContext } from '../context/useWaveContext'
 import { WaveRenderer } from './WaveRenderer'
 import { WaveLayer } from './WaveLayer'
-import { parseBackground } from '../utils/color-utils'
+import { parseBackground, generateAutoGradient } from '../utils/color-utils'
 import { generatePath, generateLayeredPaths } from '../utils/path-generator'
 import {
     DEFAULTS,
+    BREAKPOINTS,
     DEFAULT_SHADOW,
     DEFAULT_GLOW,
     DEFAULT_STROKE,
@@ -41,12 +43,13 @@ import {
     DEFAULT_SEPARATION,
     PRESETS,
 } from '../constants'
+import type { Breakpoint } from '../types'
 import { useWaveAnimation } from '../utils/animation'
 import { generateClipPath } from '../utils/clip-path'
 import { useIntersection, useMergedRef } from '../utils/use-intersection'
 import { useScrollProgress } from '../utils/use-scroll-progress'
-import { generateInterlockPaths, autoSeed } from '../utils/interlock-generator'
-import { PATH_MORPH_GENERATORS } from '../utils/keyframes'
+import { generateInterlockPaths, generateCrossBoundaryPaths, autoSeed } from '../utils/interlock-generator'
+import { PATH_MORPH_GENERATORS, generateDualPathMorphKeyframes } from '../utils/keyframes'
 
 /**
  * WaveSection — the main public API component.
@@ -89,6 +92,11 @@ export function WaveSection({
     mirror,
     seed,
 
+    // Gradient Fills
+    fillGradient,
+    containerGradient,
+    autoGradient,
+
     // Animation
     animate,
     animationDuration,
@@ -109,6 +117,8 @@ export function WaveSection({
     parallax: parallaxProp,
     hover: hoverProp,
     separation: separationProp,
+    upperWave,
+    lowerWave,
     onEnter,
     onExit,
     onProgress,
@@ -132,7 +142,7 @@ export function WaveSection({
     const sectionRef = useRef<HTMLElement>(null)
     const ctx = useOptionalWaveContext()
     const defaults = ctx?.defaults ?? DEFAULTS
-    const registeredRef = useRef(false)
+    const cleanupRef = useRef<(() => void) | null>(null)
 
     // Extract stable functions from context to avoid depending on the entire ctx object
     // (ctx changes on every sections update because getSectionBefore/After are recreated)
@@ -157,35 +167,39 @@ export function WaveSection({
           }
         : undefined
 
-    // ── Register once on mount, update on prop changes ──
+    // ── Register once on mount, update on prop changes (NO cleanup returned) ──
     useEffect(() => {
         if (!ctxRegister || !ctxUpdate) return
 
         const wavePos = wavePositionProp ?? 'bottom'
-
-        if (!registeredRef.current) {
-            // First mount — register
-            const cleanup = ctxRegister(sectionId, {
-                id: sectionId,
-                background: parsedBg,
-                wavePosition: wavePos,
-                element: sectionRef.current,
-                debugMeta,
-            })
-            registeredRef.current = true
-            return () => {
-                registeredRef.current = false
-                cleanup()
-            }
-        } else {
-            // Subsequent renders — just update
-            ctxUpdate(sectionId, {
-                background: parsedBg,
-                wavePosition: wavePos,
-                debugMeta,
-            })
+        const config = {
+            background: parsedBg,
+            wavePosition: wavePos,
+            debugMeta,
+            upperWave,
+            lowerWave,
         }
-    }, [ctxRegister, ctxUpdate, sectionId, parsedBg, wavePositionProp, isDebug, debugMeta?.pattern, debugMeta?.amplitude, debugMeta?.frequency, debugMeta?.animate])
+
+        if (!cleanupRef.current) {
+            // First mount — register
+            cleanupRef.current = ctxRegister(sectionId, {
+                id: sectionId,
+                element: sectionRef.current,
+                ...config,
+            })
+        } else {
+            // Subsequent renders — update only
+            ctxUpdate(sectionId, config)
+        }
+    }, [ctxRegister, ctxUpdate, sectionId, parsedBg, wavePositionProp, isDebug, debugMeta?.pattern, debugMeta?.amplitude, debugMeta?.frequency, debugMeta?.animate, JSON.stringify(upperWave), JSON.stringify(lowerWave)])
+
+    // Unmount-only cleanup (separate effect to prevent re-registration on prop changes)
+    useEffect(() => {
+        return () => {
+            cleanupRef.current?.()
+            cleanupRef.current = null
+        }
+    }, [])
 
     // Update element ref after mount
     useEffect(() => {
@@ -196,11 +210,46 @@ export function WaveSection({
     // ── Resolve wave config ──
     const pattern: PatternName = patternProp ?? resolvedPreset?.pattern ?? defaults.pattern
     const height = heightProp ?? resolvedPreset?.height ?? defaults.height
-    const amplitude = amplitudeProp ?? resolvedPreset?.amplitude ?? defaults.amplitude
-    const frequency = frequencyProp ?? resolvedPreset?.frequency ?? defaults.frequency
+    const rawAmplitude = amplitudeProp ?? resolvedPreset?.amplitude ?? defaults.amplitude
+    const rawFrequency = frequencyProp ?? resolvedPreset?.frequency ?? defaults.frequency
 
-    // Resolve responsive height
-    const resolvedHeight = typeof height === 'number' ? height : (height.md ?? height.sm ?? 120)
+    // Validate and clamp numeric props
+    const amplitude = Math.max(0, Math.min(1, rawAmplitude))
+    const frequency = Math.max(0.1, Math.min(20, rawFrequency))
+
+    // Validate numeric props — warn and clamp
+    if (rawAmplitude < 0 || rawAmplitude > 1) {
+        console.warn(`[wavy-bavy] amplitude ${rawAmplitude} is outside valid range [0, 1], clamped to ${amplitude}`)
+    }
+    if (rawFrequency < 0.1 || rawFrequency > 20) {
+        console.warn(`[wavy-bavy] frequency ${rawFrequency} is outside valid range [0.1, 20], clamped to ${frequency}`)
+    }
+
+    // Resolve responsive height: use max for SVG path generation, CSS media queries for visual
+    const isResponsiveHeight = typeof height === 'object'
+    const resolvedHeight = typeof height === 'number'
+        ? height
+        : Math.max(...Object.values(height as Partial<Record<Breakpoint, number>>).filter((v): v is number => typeof v === 'number'), 120)
+
+    // Generate responsive CSS for wave height
+    const responsiveHeightCSS = useMemo(() => {
+        if (!isResponsiveHeight) return undefined
+        const bp = height as Partial<Record<Breakpoint, number>>
+        const rules: string[] = []
+        // Base height (smallest defined or fallback)
+        const baseHeight = bp.sm ?? Object.values(bp).find((v): v is number => typeof v === 'number') ?? 120
+        rules.push(`.wavy-bavy-rh-${sectionId.replace(/:/g, '')} { height: ${baseHeight}px; }`)
+        // Media queries for each breakpoint
+        const bpOrder: Breakpoint[] = ['sm', 'md', 'lg', 'xl', '2xl']
+        for (const name of bpOrder) {
+            if (bp[name] !== undefined) {
+                rules.push(`@media (min-width: ${BREAKPOINTS[name]}px) { .wavy-bavy-rh-${sectionId.replace(/:/g, '')} { height: ${bp[name]}px; } }`)
+            }
+        }
+        return rules.join('\n')
+    }, [isResponsiveHeight, height, sectionId])
+
+    const responsiveHeightClass = isResponsiveHeight ? `wavy-bavy-rh-${sectionId.replace(/:/g, '')}` : undefined
 
     // ── Shadow / Glow / Stroke / Blur / Texture / Inner Shadow ──
     const shadow: ShadowConfig | undefined =
@@ -356,38 +405,76 @@ export function WaveSection({
 
     // ── Determine wave position ──
     // Default: 'bottom' — each section owns the wave BELOW it.
-    // This prevents duplicate waves between adjacent sections.
+    // Deduplication: at any boundary, bottom wave takes priority over top wave.
+    // If the previous section already renders a bottom wave at this boundary,
+    // this section's top wave is suppressed to prevent doubled/overlapping waves.
     const wavePosition = wavePositionProp ?? 'bottom'
-    const showTopWave = (wavePosition === 'top' || wavePosition === 'both') && prevSection !== null
+    const prevRendersBottom = prevSection !== null &&
+        (prevSection.wavePosition === 'bottom' || prevSection.wavePosition === 'both')
+    const showTopWave = (wavePosition === 'top' || wavePosition === 'both') && prevSection !== null && !prevRendersBottom
     const showBottomWave = (wavePosition === 'bottom' || wavePosition === 'both') && nextSection !== null
 
     // ── Generate wave paths ──
-    const patternConfig = {
-        height: resolvedHeight,
-        amplitude,
-        frequency,
-        phase: phase ?? 0,
-        mirror: mirror ?? false,
-        seed,
+
+    // ── Helper: resolve edge config from WaveEdgeConfig + section defaults ──
+    const resolveEdgeConfig = (
+        edge: WaveEdgeConfig | undefined,
+        sectionDefaults: { pattern: PatternName; amplitude: number; frequency: number; height: number; phase: number; mirror: boolean; seed?: number }
+    ) => {
+        if (!edge) return sectionDefaults
+        return {
+            pattern: edge.pattern ?? sectionDefaults.pattern,
+            amplitude: edge.amplitude ?? sectionDefaults.amplitude,
+            frequency: edge.frequency ?? sectionDefaults.frequency,
+            height: edge.height ?? sectionDefaults.height,
+            phase: edge.phase ?? sectionDefaults.phase,
+            mirror: edge.mirror ?? sectionDefaults.mirror,
+            seed: edge.seed ?? sectionDefaults.seed,
+        }
     }
+
+    const sectionDefaults = { pattern, amplitude, frequency, height: resolvedHeight, phase: phase ?? 0, mirror: mirror ?? false, seed }
 
     const topWavePaths = useMemo(() => {
         if (!showTopWave) return []
-        if (layerCount > 1) return generateLayeredPaths(pattern, layerCount, patternConfig)
-        return [generatePath(pattern === 'custom' && customPath ? 'smooth' : pattern, patternConfig)]
-    }, [showTopWave, pattern, layerCount, amplitude, frequency, phase, mirror, seed, resolvedHeight])
+        // If dual-path separation is active for the top edge, single paths are not used
+        if (separation && separation.mode !== 'flush' && (upperWave || prevSection?.lowerWave)) return []
+        const edgeConfig = resolveEdgeConfig(upperWave, sectionDefaults)
+        if (layerCount > 1) return generateLayeredPaths(edgeConfig.pattern, layerCount, { height: edgeConfig.height, amplitude: edgeConfig.amplitude, frequency: edgeConfig.frequency, phase: edgeConfig.phase, mirror: edgeConfig.mirror, seed: edgeConfig.seed })
+        return [generatePath(edgeConfig.pattern === 'custom' && customPath ? 'smooth' : edgeConfig.pattern, { height: edgeConfig.height, amplitude: edgeConfig.amplitude, frequency: edgeConfig.frequency, phase: edgeConfig.phase, mirror: edgeConfig.mirror, seed: edgeConfig.seed })]
+    }, [showTopWave, pattern, layerCount, amplitude, frequency, phase, mirror, seed, resolvedHeight, upperWave, prevSection?.lowerWave, separation])
 
     const bottomWavePaths = useMemo(() => {
         if (!showBottomWave) return []
-        if (layerCount > 1) return generateLayeredPaths(pattern, layerCount, patternConfig)
-        return [generatePath(pattern === 'custom' && customPath ? 'smooth' : pattern, patternConfig)]
-    }, [showBottomWave, pattern, layerCount, amplitude, frequency, phase, mirror, seed, resolvedHeight])
+        // If dual-path separation is active for the bottom edge, single paths are not used
+        if (separation && separation.mode !== 'flush' && (lowerWave || nextSection?.upperWave)) return []
+        const edgeConfig = resolveEdgeConfig(lowerWave, sectionDefaults)
+        if (layerCount > 1) return generateLayeredPaths(edgeConfig.pattern, layerCount, { height: edgeConfig.height, amplitude: edgeConfig.amplitude, frequency: edgeConfig.frequency, phase: edgeConfig.phase, mirror: edgeConfig.mirror, seed: edgeConfig.seed })
+        return [generatePath(edgeConfig.pattern === 'custom' && customPath ? 'smooth' : edgeConfig.pattern, { height: edgeConfig.height, amplitude: edgeConfig.amplitude, frequency: edgeConfig.frequency, phase: edgeConfig.phase, mirror: edgeConfig.mirror, seed: edgeConfig.seed })]
+    }, [showBottomWave, pattern, layerCount, amplitude, frequency, phase, mirror, seed, resolvedHeight, lowerWave, nextSection?.upperWave, separation])
 
-    // ── Dual-path interlocking (when separation is configured) ──
+    // ── Dual-path interlocking (cross-boundary or separation) ──
     const sectionOrder = ctx?.sections.findIndex(s => s.id === sectionId) ?? 0
 
     const bottomDualPaths = useMemo(() => {
-        if (!separation || !showBottomWave || separation.mode === 'flush') return undefined
+        if (!showBottomWave) return undefined
+        // Dual paths only when separation is explicitly configured
+        if (!separation || separation.mode === 'flush') return undefined
+
+        // Cross-boundary mode: use edge configs when available
+        if (lowerWave || nextSection?.upperWave) {
+            const myLower = resolveEdgeConfig(lowerWave, sectionDefaults)
+            const nextUpper = resolveEdgeConfig(nextSection?.upperWave, sectionDefaults)
+            return generateCrossBoundaryPaths({
+                upperConfig: myLower,
+                lowerConfig: nextUpper,
+                mode: separation.mode,
+                intensity: separation.intensity,
+                gap: separation.gap,
+            })
+        }
+
+        // Legacy dual-path mode (separation prop, no edge configs)
         return generateInterlockPaths({
             pattern,
             height: resolvedHeight,
@@ -400,10 +487,27 @@ export function WaveSection({
             phase: phase ?? 0,
             mirror: mirror ?? false,
         })
-    }, [separation, showBottomWave, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
+    }, [showBottomWave, lowerWave, nextSection?.upperWave, separation, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
 
     const topDualPaths = useMemo(() => {
-        if (!separation || !showTopWave || separation.mode === 'flush') return undefined
+        if (!showTopWave) return undefined
+        // Dual paths only when separation is explicitly configured
+        if (!separation || separation.mode === 'flush') return undefined
+
+        // Cross-boundary mode: use edge configs when available
+        if (upperWave || prevSection?.lowerWave) {
+            const myUpper = resolveEdgeConfig(upperWave, sectionDefaults)
+            const prevLower = resolveEdgeConfig(prevSection?.lowerWave, sectionDefaults)
+            return generateCrossBoundaryPaths({
+                upperConfig: prevLower,
+                lowerConfig: myUpper,
+                mode: separation.mode,
+                intensity: separation.intensity,
+                gap: separation.gap,
+            })
+        }
+
+        // Legacy dual-path mode (separation prop, no edge configs)
         return generateInterlockPaths({
             pattern,
             height: resolvedHeight,
@@ -416,7 +520,7 @@ export function WaveSection({
             phase: phase ?? 0,
             mirror: mirror ?? false,
         })
-    }, [separation, showTopWave, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
+    }, [showTopWave, upperWave, prevSection?.lowerWave, separation, pattern, resolvedHeight, amplitude, frequency, sectionOrder, seed, phase, mirror])
 
     // ── Path morphing keyframes for new animation types ──
     const animateName = animate ?? resolvedPreset?.animate ?? defaults.animate
@@ -429,9 +533,19 @@ export function WaveSection({
         const basePath = bottomDualPaths?.pathA ?? bottomWavePaths[0] ?? ''
         const animIdA = `wavy-morph-a-${sectionOrder}-bottom`
         const animIdB = `wavy-morph-b-${sectionOrder}-bottom`
-        const cssA = gen(animIdA, basePath, pattern, { height: resolvedHeight, amplitude, frequency })
-        const cssB = bottomDualPaths ? gen(animIdB, bottomDualPaths.pathB, pattern, { height: resolvedHeight, amplitude, frequency }) : undefined
-        return { cssA, cssB, animIdA, animIdB }
+        const morphConfig = { height: resolvedHeight, amplitude, frequency }
+
+        if (bottomDualPaths) {
+            // Coordinated dual-path keyframes — both paths stay in sync
+            const { cssA, cssB } = generateDualPathMorphKeyframes(
+                animIdA, animIdB, basePath, bottomDualPaths.pathB,
+                animateName as string, pattern, morphConfig,
+            )
+            return { cssA, cssB, animIdA, animIdB }
+        }
+
+        const cssA = gen(animIdA, basePath, pattern, morphConfig)
+        return { cssA, cssB: undefined, animIdA, animIdB }
     }, [isPathMorphAnim, showBottomWave, animateName, bottomDualPaths, bottomWavePaths, pattern, resolvedHeight, amplitude, frequency, sectionOrder])
 
     const topMorphKeyframes = useMemo(() => {
@@ -441,9 +555,19 @@ export function WaveSection({
         const basePath = topDualPaths?.pathA ?? topWavePaths[0] ?? ''
         const animIdA = `wavy-morph-a-${sectionOrder}-top`
         const animIdB = `wavy-morph-b-${sectionOrder}-top`
-        const cssA = gen(animIdA, basePath, pattern, { height: resolvedHeight, amplitude, frequency })
-        const cssB = topDualPaths ? gen(animIdB, topDualPaths.pathB, pattern, { height: resolvedHeight, amplitude, frequency }) : undefined
-        return { cssA, cssB, animIdA, animIdB }
+        const morphConfig = { height: resolvedHeight, amplitude, frequency }
+
+        if (topDualPaths) {
+            // Coordinated dual-path keyframes — both paths stay in sync
+            const { cssA, cssB } = generateDualPathMorphKeyframes(
+                animIdA, animIdB, basePath, topDualPaths.pathB,
+                animateName as string, pattern, morphConfig,
+            )
+            return { cssA, cssB, animIdA, animIdB }
+        }
+
+        const cssA = gen(animIdA, basePath, pattern, morphConfig)
+        return { cssA, cssB: undefined, animIdA, animIdB }
     }, [isPathMorphAnim, showTopWave, animateName, topDualPaths, topWavePaths, pattern, resolvedHeight, amplitude, frequency, sectionOrder])
 
     // ── Wave colors ──
@@ -454,6 +578,20 @@ export function WaveSection({
     // Bottom wave: transitions from THIS section color to NEXT section color
     const bottomWaveFillColor = nextSection?.background.dominantColor ?? 'transparent'
     const bottomWaveContainerColor = parsedBg.dominantColor
+
+    // ── Auto-gradient from adjacent section colors ──
+    const resolvedFillGradient = fillGradient ?? (autoGradient && showBottomWave
+        ? generateAutoGradient(bottomWaveContainerColor, bottomWaveFillColor)
+        : undefined)
+    const resolvedContainerGradient = containerGradient ?? (autoGradient && showBottomWave
+        ? generateAutoGradient(bottomWaveContainerColor, bottomWaveFillColor)
+        : undefined)
+    const resolvedTopFillGradient = fillGradient ?? (autoGradient && showTopWave
+        ? generateAutoGradient(topWaveContainerColor, topWaveFillColor)
+        : undefined)
+    const resolvedTopContainerGradient = containerGradient ?? (autoGradient && showTopWave
+        ? generateAutoGradient(topWaveContainerColor, topWaveFillColor)
+        : undefined)
 
     // ── Clip-path for background images ──
     const clipPathStyle = useMemo(() => {
@@ -473,6 +611,10 @@ export function WaveSection({
         }),
         ...(overlap !== 0 && { marginTop: -overlap, marginBottom: -overlap }),
         ...(clipPathStyle && { clipPath: clipPathStyle }),
+        ...(blur?.section && {
+            backdropFilter: `blur(${blur.radius}px) saturate(${blur.saturation})`,
+            WebkitBackdropFilter: `blur(${blur.radius}px) saturate(${blur.saturation})`,
+        }),
         ...style,
     }
 
@@ -498,6 +640,9 @@ export function WaveSection({
 
     return (
         <>
+            {/* Responsive height CSS injection */}
+            {responsiveHeightCSS && <style>{responsiveHeightCSS}</style>}
+
             {/* Top Wave */}
             {showTopWave && (
                 layerCount > 1 ? (
@@ -516,6 +661,8 @@ export function WaveSection({
                         path={topDualPaths?.pathA ?? topWavePaths[0] ?? ''}
                         fillColor={topWaveFillColor}
                         containerColor={topWaveContainerColor}
+                        fillGradient={resolvedTopFillGradient}
+                        containerGradient={resolvedTopContainerGradient}
                         height={resolvedHeight}
                         direction="down"
                         shadow={shadow}
@@ -529,6 +676,8 @@ export function WaveSection({
                         pathBKeyframesCSS={topMorphKeyframes?.cssB}
                         pathAAnimId={topMorphKeyframes?.animIdA}
                         pathBAnimId={topMorphKeyframes?.animIdB}
+                        animationDuration={animationDuration}
+                        className={responsiveHeightClass}
                     />
                 )
             )}
@@ -561,6 +710,8 @@ export function WaveSection({
                         path={bottomDualPaths?.pathA ?? bottomWavePaths[0] ?? ''}
                         fillColor={bottomWaveFillColor}
                         containerColor={bottomWaveContainerColor}
+                        fillGradient={resolvedFillGradient}
+                        containerGradient={resolvedContainerGradient}
                         height={resolvedHeight}
                         direction="down"
                         shadow={shadow}
@@ -574,6 +725,8 @@ export function WaveSection({
                         pathBKeyframesCSS={bottomMorphKeyframes?.cssB}
                         pathAAnimId={bottomMorphKeyframes?.animIdA}
                         pathBAnimId={bottomMorphKeyframes?.animIdB}
+                        animationDuration={animationDuration}
+                        className={responsiveHeightClass}
                     />
                 )
             )}
